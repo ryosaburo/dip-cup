@@ -1,0 +1,17 @@
+{
+  "name": "ai-agent-training-battle",
+  "private": true,
+  "version": "0.0.1",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n shared,server,frontend -c yellow,blue,green \"npm run dev -w @battle/shared\" \"npm run dev -w @battle/server\" \"npm run dev -w @battle/frontend\"",
+    "build": "npm run build -w @battle/shared && npm run build -w @battle/server && npm run build -w @battle/frontend",
+    "test": "npm test -w @battle/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3"
+  }
+}
