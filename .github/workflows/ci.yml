@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build shared package
+        run: npm run build -w @battle/shared
+
+      - name: Typecheck server
+        run: npx tsc -p packages/server/tsconfig.json --noEmit
+
+      - name: Typecheck frontend
+        run: npx tsc -p packages/frontend/tsconfig.json --noEmit
+
+      - name: Lint frontend
+        run: npm run lint -w @battle/frontend
+
+      - name: Run server tests
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build -w @battle/frontend
