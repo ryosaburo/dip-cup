@@ -10,6 +10,15 @@ npm workspacesモノレポ。
 - `packages/server` — Socket.io WSサーバー（Express + Socket.io、ルーム管理・ラウンド判定をサーバー権威で実行）
 - `packages/frontend` — Next.js（App Router）フロントエンド
 
+## 開発フロー（ブランチ運用）
+
+- `main` — 本番用。`dev` からのPRのみでマージする
+- `dev` — 開発統合ブランチ。各作業ブランチはここに向けてPRを送る
+- `feature/<内容>` — 新機能実装用。`dev` から分岐し、`dev` へPR（例: `feature/support-card-effects`）
+- `fix/<内容>` — バグ修正用。`dev` から分岐し、`dev` へPR（例: `fix/round-result-sync`）
+
+複数人での並行作業になるため、作業前に必ず最新の `dev` から新しいブランチを切ること。コンフリクトを避けるため、他人が触っているファイル・機能と重なる変更をする場合は事前に一声かける。
+
 ## セットアップ
 
 ```bash
