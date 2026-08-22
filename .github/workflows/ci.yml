@@ -26,14 +26,14 @@ jobs:
       - name: Typecheck server
         run: npx tsc -p packages/server/tsconfig.json --noEmit
 
-      - name: Typecheck frontend
-        run: npx tsc -p packages/frontend/tsconfig.json --noEmit
-
       - name: Lint frontend
         run: npm run lint -w @battle/frontend
 
       - name: Run server tests
         run: npm test
 
+      # next build runs its own TypeScript check, so no separate "typecheck frontend"
+      # step exists here — a standalone `tsc` can't see Next's route types (LayoutProps
+      # etc.), which only get generated as part of `next dev`/`next build`.
       - name: Build frontend
         run: npm run build -w @battle/frontend

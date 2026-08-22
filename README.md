@@ -61,6 +61,10 @@ npm run dev
 npm test
 ```
 
+## CI
+
+`dev`・`main`宛のPRでは `.github/workflows/ci.yml` が自動実行される（sharedのビルド／server・frontendの型チェック／frontendのLint／serverのユニットテスト／frontendの本番ビルド）。`build-and-test` がRequired status checkとして設定されているため、CIが通らないとマージできない。
+
 `packages/server/test/gameEngine.test.ts` が、暴走勝ち・スコア勝ち・両者暴走の引き分け・同点の引き分けの4パターンを検証する（Node標準のテストランナーを使用、追加依存なし）。
 
 ## ゲームバランスの暫定値
