@@ -3,40 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useGameSocket } from "@/context/GameSocketProvider";
-import { CardSelector } from "@/components/CardSelector";
-import { RoundResultView } from "@/components/RoundResultView";
-
-function ScoreHeader({
-  playerId,
-  playerName,
-  opponentName,
-  matchWins,
-  roundNumber,
-  winsNeeded,
-}: {
-  playerId: string;
-  playerName: string | null;
-  opponentName: string | null;
-  matchWins: Record<string, number>;
-  roundNumber: number;
-  winsNeeded: number;
-}) {
-  const you = matchWins[playerId] ?? 0;
-  const opp = Object.entries(matchWins).find(([id]) => id !== playerId)?.[1] ?? 0;
-  return (
-    <div className="flex justify-between items-center text-sm text-neutral-600 border-b pb-3">
-      <span>
-        {playerName} vs {opponentName}
-      </span>
-      <span>
-        ラウンド {roundNumber}（{winsNeeded}本先取）
-      </span>
-      <span className="font-bold">
-        {you} - {opp}
-      </span>
-    </div>
-  );
-}
+import { GameField } from "@/components/GameField";
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -91,53 +58,28 @@ export default function RoomPage() {
   }
 
   if (
-    (state.phase === "selecting" || state.phase === "waiting_for_result") &&
+    (state.phase === "selecting" ||
+      state.phase === "waiting_for_result" ||
+      state.phase === "round_result") &&
     state.hand &&
     state.playerId
   ) {
     return (
-      <main className="flex-1 p-6 max-w-2xl mx-auto w-full space-y-6">
-        <ScoreHeader
+      <main className="flex-1 p-4 max-w-2xl mx-auto w-full">
+        <GameField
           playerId={state.playerId}
           playerName={state.playerName}
           opponentName={state.opponentName}
           matchWins={state.matchWins}
           roundNumber={state.roundNumber}
           winsNeeded={state.winsNeeded}
-        />
-        <CardSelector
+          phase={state.phase}
           hand={state.hand}
-          disabled={state.phase === "waiting_for_result"}
           onSubmit={submitSelection}
+          lastRoundResult={state.lastRoundResult}
+          nextRoundReady={state.nextRoundReady}
+          onNextRound={proceedToNextRound}
         />
-      </main>
-    );
-  }
-
-  if (state.phase === "round_result" && state.lastRoundResult && state.playerId) {
-    return (
-      <main className="flex-1 p-6 max-w-2xl mx-auto w-full space-y-6">
-        <ScoreHeader
-          playerId={state.playerId}
-          playerName={state.playerName}
-          opponentName={state.opponentName}
-          matchWins={state.matchWins}
-          roundNumber={state.roundNumber}
-          winsNeeded={state.winsNeeded}
-        />
-        <RoundResultView
-          result={state.lastRoundResult}
-          playerId={state.playerId}
-          playerName={state.playerName ?? "あなた"}
-          opponentName={state.opponentName ?? "相手"}
-        />
-        <button
-          disabled={!state.nextRoundReady}
-          onClick={proceedToNextRound}
-          className="w-full rounded-md bg-black text-white py-3 font-semibold disabled:opacity-40"
-        >
-          {state.nextRoundReady ? "次のラウンドへ" : "サーバー処理中…"}
-        </button>
       </main>
     );
   }
