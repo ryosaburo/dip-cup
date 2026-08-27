@@ -1,6 +1,14 @@
 export type CardTier = "small" | "medium" | "large";
 
-export type SupportCardType = "mitigate" | "sabotage" | "boost";
+export type SupportCardType =
+  | "mitigate"
+  | "sabotage"
+  | "boost"
+  | "limit"
+  | "randomBoost"
+  | "removeCard"
+  | "curse"
+  | "peek";
 
 export type RoundsOption = 1 | 3 | 5;
 
@@ -32,6 +40,8 @@ export interface PlayerPublicInfo {
 export interface RoundOutcome {
   playerId: string;
   selection: PlayerSelection;
+  /** 相手の「制限」「破壊」で無効化されたプロンプトカードid（元のselectionには残る） */
+  voidedCardIds: string[];
   overlearnChance: number;
   roll: number;
   busted: boolean;
@@ -46,6 +56,25 @@ export interface RoundResult {
   winnerId: string | null;
   isReplay: boolean;
   matchWins: Record<string, number>;
+}
+
+/**
+ * クライアントへ配信する際の選択情報。
+ * サポートカードの中身は「偵察」で確認しない限り非公開のため、
+ * 使用有無（supportCardUsed）と中身（supportCard、非公開なら省略）を分けて持つ。
+ */
+export interface PublicPlayerSelection {
+  promptCardIds: string[];
+  supportCardUsed: boolean;
+  supportCard?: SupportCardType;
+}
+
+export interface PublicRoundOutcome extends Omit<RoundOutcome, "selection"> {
+  selection: PublicPlayerSelection;
+}
+
+export interface PublicRoundResult extends Omit<RoundResult, "outcomes"> {
+  outcomes: Record<string, PublicRoundOutcome>;
 }
 
 export interface GameOverResult {

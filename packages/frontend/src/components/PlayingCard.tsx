@@ -22,11 +22,21 @@ const SUPPORT_ICON: Record<SupportCardType, string> = {
   mitigate: "🛡️",
   sabotage: "⚡",
   boost: "🚀",
+  limit: "🚫",
+  randomBoost: "🎲",
+  removeCard: "💥",
+  curse: "☠️",
+  peek: "🔍",
 };
 const SUPPORT_GRADIENT: Record<SupportCardType, string> = {
   mitigate: "from-sky-400 to-sky-600",
   sabotage: "from-fuchsia-500 to-purple-700",
   boost: "from-yellow-300 to-orange-500",
+  limit: "from-slate-400 to-slate-600",
+  randomBoost: "from-lime-400 to-green-600",
+  removeCard: "from-red-500 to-rose-700",
+  curse: "from-violet-600 to-indigo-900",
+  peek: "from-cyan-400 to-teal-600",
 };
 
 export function CardBack({
