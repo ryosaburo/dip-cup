@@ -71,7 +71,7 @@ export function OpponentPanel({
         ) : (
           <div className={`text-xs ${revealed ? "card-pop-in" : "opacity-0"}`}>
             <p className="text-white/70 mb-1">
-              相手の予想：「{CARD_TYPE_LABEL[outcome.defense.prediction]}」
+              {name ?? "相手"}の予想：「{CARD_TYPE_LABEL[outcome.defense.prediction]}」
             </p>
             <p
               className={`font-bold ${outcome.wasCaught ? "text-red-400" : "text-emerald-400"}`}
