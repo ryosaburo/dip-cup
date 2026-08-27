@@ -84,13 +84,16 @@ const CARD_TYPE_GRADIENT: Record<CardType, string> = {
 
 export function CardTypeFace({
   type,
+  label,
   damage,
   size = "md",
   customClass = "",
   className = "",
 }: {
   type: CardType;
-  /** 妄想カードのみ、申告ダメージ量を表示する */
+  /** 現実カードの場合、具体的なカード名で上書きする */
+  label?: string;
+  /** 妄想カード、または現実カードの実ダメージ量を表示する */
   damage?: number;
   size?: CardSize;
   customClass?: string;
@@ -100,10 +103,10 @@ export function CardTypeFace({
 
   return (
     <div
-  className={`${sizeClass} rounded-lg border-2 border-white shadow-md bg-gradient-to-br ${CARD_TYPE_GRADIENT[type]} text-white flex flex-col items-center justify-center gap-0.5 text-center px-1 select-none ${className}`}
+      className={`${sizeClass} rounded-lg border-2 border-white shadow-md bg-gradient-to-br ${CARD_TYPE_GRADIENT[type]} text-white flex flex-col items-center justify-center gap-0.5 text-center px-1 select-none ${className}`}
     >
       <span className="text-[1.3em] leading-none">{CARD_TYPE_ICON[type]}</span>
-      <span className="font-bold text-[0.8em] leading-none">{CARD_TYPE_LABEL[type]}</span>
+      <span className="font-bold text-[0.7em] leading-tight">{label ?? CARD_TYPE_LABEL[type]}</span>
       {damage !== undefined && (
         <span className="text-[0.65em] leading-none opacity-90">{damage}</span>
       )}
@@ -136,6 +139,7 @@ export function EmptyCardSlot({
 /** 現実/妄想カードが伏せ状態から表向きに反転するアニメーション */
 export function RevealCard({
   type,
+  label,
   damage,
   size = "md",
   customClass = "",
@@ -144,6 +148,7 @@ export function RevealCard({
   className = "",
 }: {
   type: CardType;
+  label?: string;
   damage?: number;
   size?: CardSize;
   customClass?: string;
@@ -165,6 +170,7 @@ export function RevealCard({
         <div className="card-3d-face card-3d-face-back">
           <CardTypeFace
             type={type}
+            label={label}
             damage={damage}
             size={size}
             customClass={customClass}
