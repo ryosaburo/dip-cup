@@ -217,7 +217,7 @@ test("「小さな一撃」は固定10ダメージでゲージは変動しない
   assert.equal(result.gaugeDelta, 0);
 });
 
-test("「休息」は成功すると30回復し、見破られると回復ではなく30の自傷ダメージになる", () => {
+test("「休息」は成功すると30回復し、見破られると自分は回復できず見破った相手が30回復する", () => {
   const success = resolveTurn({
     turnNumber: 1,
     attackerId: "A",
@@ -239,13 +239,15 @@ test("「休息」は成功すると30回復し、見破られると回復では
     defenderId: "B",
     attack: { cardType: "reality", realityCardId: "restful_recovery" },
     defense: { prediction: "reality" },
-    lifeTotals: { A: 60, B: 100 },
+    lifeTotals: { A: 60, B: 70 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
   });
   assert.equal(caught.selfHeal, 0);
-  assert.equal(caught.selfDamage, 30);
-  assert.equal(caught.lifeTotals.A, 30);
+  assert.equal(caught.selfDamage, 0);
+  assert.equal(caught.defenderHeal, 30);
+  assert.equal(caught.lifeTotals.A, 60);
+  assert.equal(caught.lifeTotals.B, 100);
 });
 
 test("回復は開始ライフ（100）を超えて回復しない", () => {
@@ -292,7 +294,7 @@ test("「瞑想」は成功すると妄想ゲージが30%下がり、見破ら�
   assert.equal(caught.delusionGauges.A, 80);
 });
 
-test("「無理な回復」はライフ部分のみ見破りで反転し、ゲージ+20%は常に発生する", () => {
+test("「無理な回復」はライフ部分のみ見破りで防御側回復に反転し、ゲージ+20%は常に発生する", () => {
   const success = resolveTurn({
     turnNumber: 1,
     attackerId: "A",
@@ -314,17 +316,19 @@ test("「無理な回復」はライフ部分のみ見破りで反転し、ゲ�
     defenderId: "B",
     attack: { cardType: "reality", realityCardId: "reckless_recovery" },
     defense: { prediction: "reality" },
-    lifeTotals: { A: 60, B: 100 },
+    lifeTotals: { A: 60, B: 70 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
   });
-  assert.equal(caught.selfDamage, 20);
-  assert.equal(caught.lifeTotals.A, 40);
+  assert.equal(caught.selfDamage, 0);
+  assert.equal(caught.defenderHeal, 20);
+  assert.equal(caught.lifeTotals.A, 60);
+  assert.equal(caught.lifeTotals.B, 90);
   assert.equal(caught.gaugeDelta, 20); // 見破られてもゲージ上昇は反転しない
   assert.equal(caught.delusionGauges.A, 20);
 });
 
-test("「緩やかな回復」は成功すると3ターン継続回復、見破られると3ターン継続ダメージに反転する", () => {
+test("「緩やかな回復」は成功すると3ターン継続回復、見破られると見破った相手が3ターン継続回復する", () => {
   const success = resolveTurn({
     turnNumber: 1,
     attackerId: "A",
@@ -358,11 +362,27 @@ test("「緩やかな回復」は成功すると3ターン継続回復、見破�
     defenderId: "B",
     attack: { cardType: "reality", realityCardId: "slow_recovery" },
     defense: { prediction: "reality" },
-    lifeTotals: { A: 60, B: 100 },
+    lifeTotals: { A: 60, B: 70 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
   });
-  assert.deepEqual(caught.lingeringWounds.A, [{ damage: 10, turnsRemaining: 3 }]);
+  // 継続回復の対象が見破った側（B）に切り替わる
+  assert.equal(caught.lingeringWounds.A, undefined);
+  assert.deepEqual(caught.lingeringWounds.B, [{ damage: -10, turnsRemaining: 3 }]);
+
+  // ターン2はBが攻撃側にして、継続回復の効果だけを純粋に確認する
+  const nextCaught = resolveTurn({
+    turnNumber: 2,
+    attackerId: "B",
+    defenderId: "A",
+    attack: { cardType: "reality", realityCardId: "quick_strike" },
+    defense: { prediction: "delusion" },
+    lifeTotals: caught.lifeTotals,
+    delusionGauges: caught.delusionGauges,
+    lingeringWounds: caught.lingeringWounds,
+  });
+  assert.equal(nextCaught.dotDamage.B, -10);
+  assert.equal(nextCaught.lifeTotals.B, 80); // 70 + 10回復
 });
 
 test("妄想カードが見破られると攻撃側に反動ダメージ＋ゲージ上昇。抽選に外れれば即敗北しない", () => {
@@ -370,7 +390,7 @@ test("妄想カードが見破られると攻撃側に反動ダメージ＋ゲ�
     turnNumber: 1,
     attackerId: "A",
     defenderId: "B",
-    attack: { cardType: "delusion", delusionDamage: 30 },
+    attack: { cardType: "delusion", delusionEffect: "damage", delusionDamage: 30 },
     defense: { prediction: "delusion" },
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 40, B: 0 },
@@ -380,9 +400,47 @@ test("妄想カードが見破られると攻撃側に反動ダメージ＋ゲ�
 
   assert.equal(result.wasCaught, true);
   assert.equal(result.selfDamage, 30);
+  assert.equal(result.defenderHeal, 0);
   assert.equal(result.gaugeDelta, 30);
   assert.equal(result.instantDefeat, false);
   assert.equal(result.delusionGauges.A, 70);
+});
+
+test("回復系の妄想は成功すると自分が回復し、見破られると自分は回復できず見破った相手が回復する（ゲージ上昇と即敗北抽選は変わらず発生）", () => {
+  const success = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "delusion", delusionEffect: "heal", delusionDamage: 30 },
+    defense: { prediction: "reality" }, // 外れ
+    lifeTotals: { A: 60, B: 100 },
+    delusionGauges: { A: 0, B: 0 },
+    lingeringWounds: noWounds,
+  });
+  assert.equal(success.selfHeal, 30);
+  assert.equal(success.damageDealt, 0);
+  assert.equal(success.defenderHeal, 0);
+  assert.equal(success.lifeTotals.A, 90);
+  assert.equal(success.gaugeDelta, 0); // 妄想成功時はゲージ変動なし
+
+  const caught = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "delusion", delusionEffect: "heal", delusionDamage: 30 },
+    defense: { prediction: "delusion" }, // 的中
+    lifeTotals: { A: 60, B: 70 },
+    delusionGauges: { A: 40, B: 0 },
+    lingeringWounds: noWounds,
+    rng: rngSequence([0.5]),
+  });
+  assert.equal(caught.selfHeal, 0);
+  assert.equal(caught.selfDamage, 0);
+  assert.equal(caught.defenderHeal, 30);
+  assert.equal(caught.lifeTotals.A, 60);
+  assert.equal(caught.lifeTotals.B, 100);
+  assert.equal(caught.gaugeDelta, 30); // 回復系でもゲージ上昇（bluffの代償）は変わらず発生
+  assert.equal(caught.instantDefeat, false);
 });
 
 test("見破られた妄想カードの敗北抽選に当たると、妄想ゲージが100になり即敗北扱いになる", () => {
@@ -390,7 +448,7 @@ test("見破られた妄想カードの敗北抽選に当たると、妄想ゲ�
     turnNumber: 1,
     attackerId: "A",
     defenderId: "B",
-    attack: { cardType: "delusion", delusionDamage: 30 },
+    attack: { cardType: "delusion", delusionEffect: "damage", delusionDamage: 30 },
     defense: { prediction: "delusion" },
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 40, B: 0 },

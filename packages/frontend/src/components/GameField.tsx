@@ -22,24 +22,31 @@ function cardLabel(attack: TurnResult["attack"]): string {
   return CARD_TYPE_LABEL[attack.cardType];
 }
 
-/** そのターンの数値効果（ダメージ・回復・ゲージ増減）を箇条書き文字列にまとめる */
-function describeAttackEffect(result: TurnResult): string {
+/**
+ * そのターンの数値効果（ダメージ・回復・ゲージ増減）を、見ている側の視点に合わせた
+ * 「自分」「相手」の主語で箇条書き文字列にまとめる。
+ * damageDealt・defenderHealは防御側が対象、selfDamage・selfHeal・gaugeDeltaは攻撃側が対象。
+ */
+function describeAttackEffect(result: TurnResult, viewerWasAttacker: boolean): string {
+  const attackerSideLabel = viewerWasAttacker ? "自分" : "相手";
+  const defenderSideLabel = viewerWasAttacker ? "相手" : "自分";
   const parts: string[] = [];
   if (result.wasCaught) {
-    if (result.selfDamage > 0) parts.push(`自分に${result.selfDamage}の反動ダメージ`);
+    if (result.selfDamage > 0) parts.push(`${attackerSideLabel}に${result.selfDamage}の反動ダメージ`);
+    if (result.defenderHeal > 0) parts.push(`${defenderSideLabel}が${result.defenderHeal}回復`);
   } else {
-    if (result.damageDealt > 0) parts.push(`相手に${result.damageDealt}ダメージ`);
+    if (result.damageDealt > 0) parts.push(`${defenderSideLabel}に${result.damageDealt}ダメージ`);
   }
-  if (result.selfHeal > 0) parts.push(`自分のライフが${result.selfHeal}回復`);
-  if (result.gaugeDelta > 0) parts.push(`妄想ゲージ+${result.gaugeDelta}%`);
-  if (result.gaugeDelta < 0) parts.push(`妄想ゲージ${result.gaugeDelta}%`);
+  if (result.selfHeal > 0) parts.push(`${attackerSideLabel}のライフが${result.selfHeal}回復`);
+  if (result.gaugeDelta > 0) parts.push(`${attackerSideLabel}の妄想ゲージ+${result.gaugeDelta}%`);
+  if (result.gaugeDelta < 0) parts.push(`${attackerSideLabel}の妄想ゲージ${result.gaugeDelta}%`);
   if (result.wasCaught && result.instantDefeat) parts.push("現実に引き戻された！");
   return parts.join("・");
 }
 
 function describeForViewer(result: TurnResult, viewerWasAttacker: boolean): string {
   const label = cardLabel(result.attack);
-  const effect = describeAttackEffect(result);
+  const effect = describeAttackEffect(result, viewerWasAttacker);
   const suffix = effect ? `：${effect}` : "";
   if (viewerWasAttacker) {
     return result.wasCaught

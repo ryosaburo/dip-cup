@@ -16,12 +16,17 @@ export type RealityCardId =
 
 export type RoomPhase = "waiting" | "attacking" | "defending" | "gameover";
 
+/** 妄想カードが成功した場合に発生する効果の種類 */
+export type DelusionEffect = "damage" | "heal";
+
 /** 攻撃側がそのターンに出す内容 */
 export interface AttackSelection {
   cardType: CardType;
   /** 現実カードを選んだ場合のみ、どの現実カードかを指定する */
   realityCardId?: RealityCardId;
-  /** 妄想カードを選んだ場合のみ、その場で申告する攻撃ダメージ量 */
+  /** 妄想カードを選んだ場合のみ、成功時にダメージを与えるか自分を回復するか */
+  delusionEffect?: DelusionEffect;
+  /** 妄想カードを選んだ場合のみ、その場で申告する量（ダメージ量または回復量） */
   delusionDamage?: number;
 }
 
@@ -49,10 +54,12 @@ export interface TurnResult {
   wasCaught: boolean;
   /** 防御側が受けたダメージ（見破っていた場合は0） */
   damageDealt: number;
-  /** 見破られたことで攻撃側が受けた反動ダメージ（見破られていなければ0） */
+  /** 見破られたことで攻撃側が受けた反動ダメージ（ダメージ系カードが見破られた場合。対象外・回復系カードなら0） */
   selfDamage: number;
-  /** 回復系カードの成功によって攻撃側が回復したライフ（対象外なら0） */
+  /** 回復系カード（現実・妄想問わず）の成功によって攻撃側が回復したライフ（対象外なら0） */
   selfHeal: number;
+  /** 回復系カードを見破ったことで防御側（見破った側）が回復したライフ（対象外なら0） */
+  defenderHeal: number;
   /** このターンでの攻撃側の妄想ゲージの増減 */
   gaugeDelta: number;
   /** 見破られた妄想カードの敗北抽選に外れて攻撃側が即敗北したか */

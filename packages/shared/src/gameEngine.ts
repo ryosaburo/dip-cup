@@ -156,6 +156,7 @@ export function resolveTurn(params: {
   let damageDealt = 0;
   let selfDamage = 0;
   let selfHeal = 0;
+  let defenderHeal = 0;
   let gaugeDelta = 0;
   let instantDefeat = false;
   /** 新たに継続効果を受けるプレイヤーと、その量（正はダメージ、負は回復）・継続ターン数 */
@@ -163,8 +164,12 @@ export function resolveTurn(params: {
 
   if (wasCaught) {
     if (attack.cardType === "delusion") {
-      selfDamage = magnitude;
       gaugeDelta = magnitude;
+      if (attack.delusionEffect === "heal") {
+        defenderHeal = magnitude; // 回復系の妄想は見破った側（防御側）が回復する
+      } else {
+        selfDamage = magnitude; // ダメージ系の妄想はこれまで通り自分に跳ね返る
+      }
       if (rng() < currentGauge / 100) {
         instantDefeat = true;
       }
@@ -174,19 +179,25 @@ export function resolveTurn(params: {
     } else if (realityCardId === "meditation") {
       gaugeDelta = MEDITATION_GAUGE_AMOUNT; // 成功時と逆に上がる
     } else if (realityCardId === "restful_recovery") {
-      selfDamage = magnitude; // 回復が自傷に反転する
+      defenderHeal = magnitude; // 回復系カードは見破った側（防御側）が回復する
     } else if (realityCardId === "reckless_recovery") {
-      selfDamage = magnitude; // 回復が自傷に反転する
+      defenderHeal = magnitude; // 回復系カードは見破った側（防御側）が回復する
       gaugeDelta = RECKLESS_RECOVERY_GAUGE_AMOUNT; // ゲージ上昇は見破られたかに関わらず常に発生
     } else if (realityCardId === "slow_recovery") {
-      // 継続回復が継続ダメージに反転する
-      newWound = { target: attackerId, amount: SLOW_RECOVERY_TICK_AMOUNT, duration: SLOW_RECOVERY_DURATION };
+      // 継続回復の対象が見破った側（防御側）に切り替わる
+      newWound = { target: defenderId, amount: -SLOW_RECOVERY_TICK_AMOUNT, duration: SLOW_RECOVERY_DURATION };
     } else if (realityCardId && PLAIN_DAMAGE_CARDS.has(realityCardId)) {
       // steady_strikeを含む単純な攻撃カード：見破られた場合はゲージ変動なし（成功時のみ下がる）
       selfDamage = magnitude;
     }
   } else {
-    if (realityCardId === "steady_strike") {
+    if (attack.cardType === "delusion") {
+      if (attack.delusionEffect === "heal") {
+        selfHeal = magnitude;
+      } else {
+        damageDealt = magnitude;
+      }
+    } else if (realityCardId === "steady_strike") {
       damageDealt = magnitude;
       gaugeDelta = -STEADY_STRIKE_GAUGE_DECREASE;
     } else if (realityCardId === "lingering_wound") {
@@ -202,7 +213,7 @@ export function resolveTurn(params: {
     } else if (realityCardId === "slow_recovery") {
       newWound = { target: attackerId, amount: -SLOW_RECOVERY_TICK_AMOUNT, duration: SLOW_RECOVERY_DURATION };
     } else {
-      // 通常の攻撃カード（現実の残り全種）・妄想カードはそのまま相手に通る
+      // 通常の攻撃カード（現実の残り全種）はそのまま相手に通る
       damageDealt = magnitude;
     }
   }
@@ -221,7 +232,7 @@ export function resolveTurn(params: {
     (nextLifeTotals[attackerId] ?? 0) - selfDamage + selfHeal - (dotDamage[attackerId] ?? 0),
   );
   nextLifeTotals[defenderId] = clampLife(
-    (nextLifeTotals[defenderId] ?? 0) - damageDealt - (dotDamage[defenderId] ?? 0),
+    (nextLifeTotals[defenderId] ?? 0) - damageDealt + defenderHeal - (dotDamage[defenderId] ?? 0),
   );
 
   const nextGauges = { ...delusionGauges };
@@ -237,6 +248,7 @@ export function resolveTurn(params: {
     damageDealt,
     selfDamage,
     selfHeal,
+    defenderHeal,
     gaugeDelta,
     instantDefeat,
     dotDamage,
