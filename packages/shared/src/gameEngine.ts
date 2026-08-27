@@ -4,7 +4,6 @@ import {
   SUPPORT_BOOST_AMOUNT,
   SUPPORT_CURSE_AMOUNT,
   SUPPORT_CURSE_TRIGGER_CHANCE,
-  SUPPORT_LIMIT_MAX_CARDS,
   SUPPORT_MITIGATE_AMOUNT,
   SUPPORT_SABOTAGE_AMOUNT,
 } from "./gameConfig.js";
@@ -39,21 +38,12 @@ function clampPercent(value: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
-/**
- * 相手のサポートカード（制限・破壊）が自分のカードリストに及ぼす効果を解決する。
- * 1人1ラウンド1枚までなので、相手からの効果は制限か破壊のどちらか一方にしかならない。
- */
+/** 相手のサポートカード（破壊）が自分のカードリストに及ぼす効果を解決する。 */
 function applyOpponentCardEffect(
   cardIds: string[],
   opponentSupportCard: SupportCardType | undefined,
   rng: () => number,
 ): { effectiveIds: string[]; voidedIds: string[] } {
-  if (opponentSupportCard === "limit" && cardIds.length > SUPPORT_LIMIT_MAX_CARDS) {
-    return {
-      effectiveIds: cardIds.slice(0, SUPPORT_LIMIT_MAX_CARDS),
-      voidedIds: cardIds.slice(SUPPORT_LIMIT_MAX_CARDS),
-    };
-  }
   if (opponentSupportCard === "removeCard" && cardIds.length > 0) {
     const index = Math.floor(rng() * cardIds.length);
     return {

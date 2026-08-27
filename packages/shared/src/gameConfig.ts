@@ -30,7 +30,6 @@ export const SUPPORT_CARD_CONFIG: Record<
   mitigate: { label: "軽減", description: "自分の過学習確率を10pt下げる" },
   sabotage: { label: "妨害", description: "相手の過学習確率を10pt上げる" },
   boost: { label: "ブースト", description: "自分の学習スコアに20加算する" },
-  limit: { label: "制限", description: "相手が使えるプロンプトカードを1枚までに制限する" },
   randomBoost: {
     label: "強化",
     description: "自分が出したカードからランダムで1枚選び、そのスコアを2倍にする",
@@ -48,7 +47,6 @@ export const SUPPORT_CARD_POOL: SupportCardType[] = [
   "mitigate",
   "sabotage",
   "boost",
-  "limit",
   "randomBoost",
   "removeCard",
   "curse",
@@ -60,7 +58,6 @@ export const SUPPORT_CARD_DEAL_COUNT = 3;
 export const SUPPORT_MITIGATE_AMOUNT = 10;
 export const SUPPORT_SABOTAGE_AMOUNT = 10;
 export const SUPPORT_BOOST_AMOUNT = 20;
-export const SUPPORT_LIMIT_MAX_CARDS = 1;
 export const SUPPORT_CURSE_TRIGGER_CHANCE = 75;
 export const SUPPORT_CURSE_AMOUNT = 30;
 
