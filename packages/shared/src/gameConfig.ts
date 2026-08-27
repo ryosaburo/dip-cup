@@ -13,7 +13,10 @@ export const STARTING_LIFE = 100;
 export const DELUSION_DAMAGE_MIN = 10;
 export const DELUSION_DAMAGE_MAX = 60;
 
-/** 現実カードは常にこの11種類から1枚を選んで出す */
+/** 攻撃側にランダムで配られる現実カードの枚数（この中から1枚を選んで出す） */
+export const REALITY_HAND_SIZE = 3;
+
+/** 現実カードは全部でこの11種類あり、ターンごとにこの中からランダムに配られる */
 export const REALITY_CARD_IDS: RealityCardId[] = [
   "steady_strike",
   "overload_strike",

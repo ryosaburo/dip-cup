@@ -2,11 +2,12 @@ import { randomUUID } from "node:crypto";
 import {
   DELUSION_DAMAGE_MAX,
   DELUSION_DAMAGE_MIN,
-  REALITY_CARD_IDS,
+  dealRealityCards,
   STARTING_LIFE,
   type AttackSelection,
   type DefenseSelection,
   type LingeringWound,
+  type RealityCardId,
   type RoomPhase,
 } from "@battle/shared";
 
@@ -27,6 +28,8 @@ export interface Room {
   attackerId: string;
   /** 攻撃側が確定させた、防御側の判定待ちの攻撃内容 */
   pendingAttack?: AttackSelection;
+  /** 現在の攻撃側にランダムで配られている現実カード（この中からしか選べない） */
+  dealtRealityCards: RealityCardId[];
   lifeTotals: Record<string, number>;
   delusionGauges: Record<string, number>;
   /** 「疼く傷跡」による継続ダメージ（受けているプレイヤーのplayerId → 効果リスト） */
@@ -62,6 +65,7 @@ export class RoomManager {
       turnNumber: 0,
       phase: "waiting",
       attackerId: host.playerId,
+      dealtRealityCards: [],
       lifeTotals: { [host.playerId]: STARTING_LIFE },
       delusionGauges: { [host.playerId]: 0 },
       lingeringWounds: {},
@@ -90,6 +94,7 @@ export class RoomManager {
     room.turnNumber = 1;
     // ホスト（先に部屋を作った側）が先攻
     room.attackerId = room.players[0].playerId;
+    room.dealtRealityCards = dealRealityCards();
     this.socketToRoom.set(socketId, room.roomCode);
     return room;
   }
@@ -116,7 +121,7 @@ export class RoomManager {
     if (player.playerId !== room.attackerId) throw new Error("あなたの攻撃ターンではありません");
     if (room.pendingAttack) throw new Error("すでに攻撃を選択済みです");
 
-    validateAttack(attack);
+    validateAttack(attack, room.dealtRealityCards);
     room.pendingAttack = attack;
     room.phase = "defending";
     return room;
@@ -139,6 +144,7 @@ export class RoomManager {
     const [a, b] = room.players;
     room.attackerId = room.attackerId === a.playerId ? b.playerId : a.playerId;
     room.pendingAttack = undefined;
+    room.dealtRealityCards = dealRealityCards();
     room.turnNumber += 1;
     room.phase = "attacking";
   }
@@ -155,13 +161,13 @@ export class RoomManager {
   }
 }
 
-function validateAttack(attack: AttackSelection): void {
+function validateAttack(attack: AttackSelection, dealtRealityCards: RealityCardId[]): void {
   if (attack.cardType !== "reality" && attack.cardType !== "delusion") {
     throw new Error("不正なカード種別です");
   }
   if (attack.cardType === "reality") {
-    if (!attack.realityCardId || !REALITY_CARD_IDS.includes(attack.realityCardId)) {
-      throw new Error("不正な現実カードです");
+    if (!attack.realityCardId || !dealtRealityCards.includes(attack.realityCardId)) {
+      throw new Error("そのターンに配られていない現実カードです");
     }
   }
   if (attack.cardType === "delusion") {

@@ -52,6 +52,7 @@ export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
             lifeTotals: room.lifeTotals,
             delusionGauges: room.delusionGauges,
             attackerId: room.attackerId,
+            dealtRealityCards: room.dealtRealityCards,
           });
         }
       } catch (err) {
@@ -115,7 +116,11 @@ function resolveAndBroadcastTurn(
 
   if (gameOver) {
     room.phase = "gameover";
-    io.to(room.roomCode).emit("turn_result", { result, nextAttackerId: room.attackerId });
+    io.to(room.roomCode).emit("turn_result", {
+      result,
+      nextAttackerId: room.attackerId,
+      nextDealtRealityCards: room.dealtRealityCards,
+    });
     io.to(room.roomCode).emit("game_over", {
       winnerId,
       lifeTotals: room.lifeTotals,
@@ -126,7 +131,11 @@ function resolveAndBroadcastTurn(
   }
 
   roomManager.advanceTurn(room);
-  io.to(room.roomCode).emit("turn_result", { result, nextAttackerId: room.attackerId });
+  io.to(room.roomCode).emit("turn_result", {
+    result,
+    nextAttackerId: room.attackerId,
+    nextDealtRealityCards: room.dealtRealityCards,
+  });
 }
 
 /** ログイン済みプレイヤーが1人以上いる試合のみ対戦履歴を保存する */
