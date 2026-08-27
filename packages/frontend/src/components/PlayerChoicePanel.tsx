@@ -295,7 +295,7 @@ export function PlayerChoicePanel({
 
         <div className="rounded-md bg-white/10 px-3 py-3 text-center">
           <p className="text-white/70 text-[0.7rem] mb-1">{displayOpponentName}が攻撃してきました</p>
-          <p className="text-white font-bold text-2xl">{pendingDamage}ダメージ</p>
+          <p className="text-white font-bold text-2xl">{pendingDamage}ダメージ？</p>
         </div>
         <p className="text-white/60 text-[0.65rem] text-center">
           これは「現実」「妄想」どちらのカードだと思いますか？
