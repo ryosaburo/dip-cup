@@ -13,6 +13,9 @@ export const STARTING_LIFE = 100;
 export const DELUSION_DAMAGE_MIN = 10;
 export const DELUSION_DAMAGE_MAX = 60;
 
+/** 妄想カードを見破られずに成功させた累計回数がこの値に達すると、即座に勝利となる */
+export const DELUSION_SUCCESS_WIN_COUNT = 5;
+
 /** 攻撃側にランダムで配られる現実カードの枚数（この中から1枚を選んで出す） */
 export const REALITY_HAND_SIZE = 3;
 

@@ -53,6 +53,7 @@ export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
             delusionGauges: room.delusionGauges,
             attackerId: room.attackerId,
             dealtRealityCards: room.dealtRealityCards,
+            delusionSuccessCounts: room.delusionSuccessCounts,
           });
         }
       } catch (err) {
@@ -106,13 +107,19 @@ function resolveAndBroadcastTurn(
     lifeTotals: room.lifeTotals,
     delusionGauges: room.delusionGauges,
     lingeringWounds: room.lingeringWounds,
+    delusionSuccessCounts: room.delusionSuccessCounts,
   });
 
   room.lifeTotals = result.lifeTotals;
   room.delusionGauges = result.delusionGauges;
   room.lingeringWounds = result.lingeringWounds;
+  room.delusionSuccessCounts = result.delusionSuccessCounts;
 
-  const { gameOver, winnerId } = evaluateMatchOutcome(room.lifeTotals, room.delusionGauges);
+  const { gameOver, winnerId } = evaluateMatchOutcome(
+    room.lifeTotals,
+    room.delusionGauges,
+    room.delusionSuccessCounts,
+  );
 
   if (gameOver) {
     room.phase = "gameover";
@@ -125,6 +132,7 @@ function resolveAndBroadcastTurn(
       winnerId,
       lifeTotals: room.lifeTotals,
       delusionGauges: room.delusionGauges,
+      delusionSuccessCounts: room.delusionSuccessCounts,
     });
     void saveMatchHistory(room, winnerId);
     return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { REALITY_CARD_CONFIG, type CardType, type TurnResult } from "@battle/shared";
+import { DELUSION_SUCCESS_WIN_COUNT, REALITY_CARD_CONFIG, type CardType, type TurnResult } from "@battle/shared";
 import { CardBack, GaugeBar, LifeBar, RevealCard } from "./PlayingCard";
 
 const CARD_TYPE_LABEL: Record<CardType, string> = { reality: "現実", delusion: "妄想" };
@@ -9,6 +9,7 @@ export function OpponentPanel({
   name,
   life,
   gauge,
+  delusionSuccessCount,
   isAttackerNow,
   pendingDamage,
   outcome,
@@ -18,6 +19,8 @@ export function OpponentPanel({
   name: string | null;
   life: number;
   gauge: number;
+  /** 相手が見破られずに成功させた妄想カードの累計回数 */
+  delusionSuccessCount: number;
   /** このターン相手が攻撃側かどうか（結果表示中はnull） */
   isAttackerNow: boolean | null;
   /** 相手が攻撃側で、自分が防御側として確認済みのダメージ量 */
@@ -38,6 +41,12 @@ export function OpponentPanel({
         <span className="text-fuchsia-300/80 text-[0.65rem] font-bold">{gauge}%</span>
       </div>
       <GaugeBar gauge={gauge} className="mb-2" />
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sky-300/80 text-[0.6rem]">妄想成功（見破られず）</span>
+        <span className="text-sky-300/80 text-[0.6rem] font-bold">
+          {delusionSuccessCount}/{DELUSION_SUCCESS_WIN_COUNT}
+        </span>
+      </div>
 
       {outcome ? (
         wasAttackerInOutcome ? (

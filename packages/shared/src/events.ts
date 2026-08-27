@@ -33,6 +33,8 @@ export interface ServerToClientEvents {
     attackerId: string;
     /** 最初の攻撃側にランダムで配られた現実カード（この中から1枚を選ぶ） */
     dealtRealityCards: RealityCardId[];
+    /** 各プレイヤーが見破られずに成功させた妄想カードの累計回数 */
+    delusionSuccessCounts: Record<string, number>;
   }) => void;
   /** 攻撃側が攻撃を確定した合図。防御側はこのダメージ量を見てから予想する（カード種別は伏せる） */
   attack_submitted: (payload: { damage: number; attackerId: string; turnNumber: number }) => void;
@@ -46,6 +48,7 @@ export interface ServerToClientEvents {
     winnerId: string | null;
     lifeTotals: Record<string, number>;
     delusionGauges: Record<string, number>;
+    delusionSuccessCounts: Record<string, number>;
   }) => void;
   opponent_left: () => void;
 }
