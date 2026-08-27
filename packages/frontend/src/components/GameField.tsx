@@ -68,6 +68,61 @@ function describeForViewer(
     : `😱 ${opponentName}の「${label}」を見破れなかった${suffix}`;
 }
 
+const CARD_TYPE_IMAGE: Record<CardType, string> = {
+  reality: "/genjitu.png",
+  delusion: "/mousou.png",
+};
+
+const DELUSION_SPARKLES = [
+  { emoji: "✨", style: { top: "-8%", left: "2%" }, delay: "0s" },
+  { emoji: "🌸", style: { top: "2%", right: "-4%" }, delay: "0.3s" },
+  { emoji: "💫", style: { bottom: "-6%", left: "10%" }, delay: "0.6s" },
+  { emoji: "✨", style: { bottom: "4%", right: "6%" }, delay: "0.9s" },
+];
+
+/**
+ * 見破り結果（現実／妄想）を画面中央に大きく表示する。中央から徐々に拡大しながら出現し、
+ * 妄想はメルヘンチックに華やかへ、現実はどんより重く沈むように演出を分ける。
+ * 画面の任意の場所をタップすると閉じられる（「次のターンへ」ボタンと重なるための対策）。
+ */
+function CardTypeRevealImage({ cardType, active }: { cardType: CardType; active: boolean }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (!active || dismissed) return null;
+
+  const isDelusion = cardType === "delusion";
+
+  return (
+    <button
+      type="button"
+      onClick={() => setDismissed(true)}
+      aria-label="タップして閉じる"
+      className="absolute inset-0 z-30 flex cursor-pointer items-center justify-center"
+    >
+      <span className="relative flex items-center justify-center">
+        <span className={isDelusion ? "reveal-delusion-aura" : "reveal-reality-aura"} />
+        {isDelusion &&
+          DELUSION_SPARKLES.map((sparkle, i) => (
+            <span
+              key={i}
+              className="reveal-sparkle absolute text-xl"
+              style={{ ...sparkle.style, animationDelay: sparkle.delay }}
+            >
+              {sparkle.emoji}
+            </span>
+          ))}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={CARD_TYPE_IMAGE[cardType]}
+          alt={CARD_TYPE_LABEL[cardType]}
+          className={`relative w-32 sm:w-40 ${
+            isDelusion ? "reveal-image-delusion" : "reveal-image-reality"
+          }`}
+        />
+      </span>
+    </button>
+  );
+}
+
 /** 継続ダメージ／継続回復（符号付きdotDamage）を1行で表示する。0の場合は何も出さない */
 function DotLine({ amount, who }: { amount: number; who: string }) {
   if (amount === 0) return null;
@@ -137,12 +192,17 @@ export function GameField({
         : iWasAttacker;
 
   return (
-    <div className="felt-table rounded-2xl border border-white/10 shadow-xl p-4 space-y-3">
+    <div className="felt-table relative rounded-2xl border border-white/10 shadow-xl p-4 space-y-3">
       <div className="text-center text-white/70 text-xs">ターン {turnNumber}</div>
 
       <RevealSequencer active={isResult} roundKey={lastTurnResult?.turnNumber ?? turnNumber}>
         {(revealed) => (
           <>
+            <CardTypeRevealImage
+              cardType={lastTurnResult?.attack.cardType ?? "reality"}
+              active={isResult && revealed}
+            />
+
             <OpponentPanel
               name={opponentName}
               life={opponentLife}
