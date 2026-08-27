@@ -3,6 +3,8 @@ import {
   DELUSION_DAMAGE_MAX,
   DELUSION_DAMAGE_MIN,
   dealRealityCards,
+  LIFE_DRAIN_MAX,
+  LIFE_DRAIN_MIN,
   STARTING_LIFE,
   type AttackSelection,
   type DefenseSelection,
@@ -168,6 +170,17 @@ function validateAttack(attack: AttackSelection, dealtRealityCards: RealityCardI
   if (attack.cardType === "reality") {
     if (!attack.realityCardId || !dealtRealityCards.includes(attack.realityCardId)) {
       throw new Error("そのターンに配られていない現実カードです");
+    }
+    if (attack.realityCardId === "life_drain") {
+      const amount = attack.realityAmount;
+      if (
+        typeof amount !== "number" ||
+        !Number.isInteger(amount) ||
+        amount < LIFE_DRAIN_MIN ||
+        amount > LIFE_DRAIN_MAX
+      ) {
+        throw new Error(`吸血の申告ダメージ量は${LIFE_DRAIN_MIN}〜${LIFE_DRAIN_MAX}の整数で指定してください`);
+      }
     }
   }
   if (attack.cardType === "delusion") {

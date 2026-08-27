@@ -75,12 +75,18 @@ export function getAttackMagnitude(attack: AttackSelection, attackerGauge: numbe
       return RECKLESS_RECOVERY_LIFE_AMOUNT;
     case "slow_recovery":
       return SLOW_RECOVERY_TICK_AMOUNT;
+    case "life_drain":
+      return attack.realityAmount!;
     default:
       throw new Error(`invalid reality card: ${attack.realityCardId}`);
   }
 }
 
-/** 単発の相手攻撃カード（見破られなければ相手にダメージ、見破られれば自分に反動）かどうか */
+/**
+ * 単発の相手攻撃カード（見破られなければ相手にダメージ、見破られれば自分に反動）かどうか。
+ * 「吸血」は成功時に自分も回復する点だけ例外で成功側は別途分岐するが、
+ * 見破られた場合の「自分に反動ダメージ・ゲージ変動なし」という挙動は共通なのでここに含める。
+ */
 const PLAIN_DAMAGE_CARDS = new Set([
   "steady_strike",
   "overload_strike",
@@ -88,6 +94,7 @@ const PLAIN_DAMAGE_CARDS = new Set([
   "heavy_strike",
   "quick_strike",
   "minor_strike",
+  "life_drain",
 ]);
 
 /**
@@ -212,6 +219,9 @@ export function resolveTurn(params: {
       gaugeDelta = RECKLESS_RECOVERY_GAUGE_AMOUNT; // 成功してもゲージは上がる（デバフ前提の効果）
     } else if (realityCardId === "slow_recovery") {
       newWound = { target: attackerId, amount: -SLOW_RECOVERY_TICK_AMOUNT, duration: SLOW_RECOVERY_DURATION };
+    } else if (realityCardId === "life_drain") {
+      damageDealt = magnitude;
+      selfHeal = magnitude; // 与えたダメージ分だけ自分も回復する
     } else {
       // 通常の攻撃カード（現実の残り全種）はそのまま相手に通る
       damageDealt = magnitude;

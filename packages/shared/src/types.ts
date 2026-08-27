@@ -12,7 +12,8 @@ export type RealityCardId =
   | "restful_recovery"
   | "meditation"
   | "reckless_recovery"
-  | "slow_recovery";
+  | "slow_recovery"
+  | "life_drain";
 
 export type RoomPhase = "waiting" | "attacking" | "defending" | "gameover";
 
@@ -24,6 +25,8 @@ export interface AttackSelection {
   cardType: CardType;
   /** 現実カードを選んだ場合のみ、どの現実カードかを指定する */
   realityCardId?: RealityCardId;
+  /** 現実カードのうち、量を自分で選べるカード（吸血）を選んだ場合のみ、その申告ダメージ量 */
+  realityAmount?: number;
   /** 妄想カードを選んだ場合のみ、成功時にダメージを与えるか自分を回復するか */
   delusionEffect?: DelusionEffect;
   /** 妄想カードを選んだ場合のみ、その場で申告する量（ダメージ量または回復量） */
