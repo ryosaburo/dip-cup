@@ -56,7 +56,7 @@ export default function RoomPage() {
           <img
             src={won ? "/win.jpg" : "/lose.jpg"}
             alt={won ? "勝利" : "敗北"}
-            className="w-48 sm:w-64"
+            className="max-w-[90vw] max-h-[55vh] w-auto h-auto rounded-lg shadow-lg"
           />
         )}
         <h1 className="text-3xl font-bold">{isDraw ? "引き分け" : won ? "勝利！" : "敗北…"}</h1>
