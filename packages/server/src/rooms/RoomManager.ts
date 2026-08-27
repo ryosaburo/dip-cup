@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
 import {
   buildInitialHand,
+  dealSupportOptions,
   WINS_NEEDED,
   type CardTier,
   type PlayerSelection,
   type RoomPhase,
   type RoundsOption,
+  type SupportCardType,
 } from "@battle/shared";
 
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 紛らわしい0/O/1/Iを除外
@@ -16,6 +18,8 @@ export interface ServerPlayer {
   name: string;
   userId?: string;
   pendingSelection?: PlayerSelection;
+  /** そのラウンドでランダムに配られたサポートカードの選択肢（「使わない」以外） */
+  dealtSupportOptions: SupportCardType[];
 }
 
 export interface Room {
@@ -55,6 +59,7 @@ export class RoomManager {
       socketId: hostSocketId,
       name: hostName,
       userId: hostUserId,
+      dealtSupportOptions: [],
     };
     const room: Room = {
       roomCode,
@@ -75,14 +80,28 @@ export class RoomManager {
     if (!room) throw new Error("ルームが見つかりません");
     if (room.players.length >= 2) throw new Error("ルームは満員です");
 
-    const guest: ServerPlayer = { playerId: randomUUID(), socketId, name, userId };
+    const guest: ServerPlayer = {
+      playerId: randomUUID(),
+      socketId,
+      name,
+      userId,
+      dealtSupportOptions: [],
+    };
     room.players.push(guest);
     room.matchWins[guest.playerId] = 0;
     room.matchWins[room.players[0].playerId] = room.matchWins[room.players[0].playerId] ?? 0;
     room.phase = "selecting";
     room.roundNumber = 1;
+    this.dealSupportOptionsForRound(room);
     this.socketToRoom.set(socketId, room.roomCode);
     return room;
+  }
+
+  /** そのラウンド用にサポートカードの選択肢をプレイヤーごとにランダムで配り直す */
+  dealSupportOptionsForRound(room: Room): void {
+    for (const player of room.players) {
+      player.dealtSupportOptions = dealSupportOptions();
+    }
   }
 
   getRoomBySocketId(socketId: string): Room | undefined {
@@ -97,7 +116,7 @@ export class RoomManager {
     const player = room.players.find((p) => p.socketId === socketId);
     if (!player) throw new Error("プレイヤーが見つかりません");
 
-    validateSelection(selection);
+    validateSelection(selection, player.dealtSupportOptions);
     player.pendingSelection = selection;
     return room;
   }
@@ -111,6 +130,7 @@ export class RoomManager {
     for (const player of room.players) {
       player.pendingSelection = undefined;
     }
+    this.dealSupportOptionsForRound(room);
   }
 
   removeBySocketId(socketId: string): { room: Room; opponent?: ServerPlayer } | undefined {
@@ -125,7 +145,7 @@ export class RoomManager {
   }
 }
 
-function validateSelection(selection: PlayerSelection): void {
+function validateSelection(selection: PlayerSelection, dealtSupportOptions: SupportCardType[]): void {
   const tierCounts: Record<CardTier, number> = { small: 0, medium: 0, large: 0 };
   for (const id of selection.promptCardIds) {
     const tier = id.split("-")[0] as CardTier;
@@ -138,10 +158,7 @@ function validateSelection(selection: PlayerSelection): void {
       throw new Error(`${tier}カードの使用枚数が手札を超えています`);
     }
   }
-  if (
-    selection.supportCard &&
-    !["mitigate", "sabotage", "boost"].includes(selection.supportCard)
-  ) {
+  if (selection.supportCard && !dealtSupportOptions.includes(selection.supportCard)) {
     throw new Error("不正なサポートカードです");
   }
 }

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { HandPublicState, PlayerSelection, RoundResult } from "@battle/shared";
+import type {
+  HandPublicState,
+  PlayerSelection,
+  PublicRoundResult,
+  SupportCardType,
+} from "@battle/shared";
 import { OpponentPanel } from "./OpponentPanel";
 import { PlayerHandPanel } from "./PlayerHandPanel";
 
@@ -14,6 +19,7 @@ export function GameField({
   winsNeeded,
   phase,
   hand,
+  supportOptions,
   onSubmit,
   lastRoundResult,
   nextRoundReady,
@@ -27,8 +33,9 @@ export function GameField({
   winsNeeded: number;
   phase: "selecting" | "waiting_for_result" | "round_result";
   hand: HandPublicState;
+  supportOptions: SupportCardType[];
   onSubmit: (selection: PlayerSelection) => void;
-  lastRoundResult: RoundResult | null;
+  lastRoundResult: PublicRoundResult | null;
   nextRoundReady: boolean;
   onNextRound: () => void;
 }) {
@@ -91,9 +98,11 @@ export function GameField({
             </div>
 
             <PlayerHandPanel
+              key={roundNumber}
               name={playerName}
               matchWins={you}
               hand={hand}
+              supportOptions={supportOptions}
               disabled={phase === "waiting_for_result"}
               onSubmit={onSubmit}
               outcome={yourOutcome}

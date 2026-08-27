@@ -12,8 +12,9 @@ import {
 import type {
   GameOverResult,
   PlayerSelection,
-  RoundResult,
+  PublicRoundResult,
   RoundsOption,
+  SupportCardType,
 } from "@battle/shared";
 import type { HandPublicState } from "@battle/shared";
 import { getSocket } from "@/lib/socket";
@@ -37,8 +38,9 @@ interface GameState {
   winsNeeded: number;
   roundNumber: number;
   hand: HandPublicState | null;
+  supportOptions: SupportCardType[];
   matchWins: Record<string, number>;
-  lastRoundResult: RoundResult | null;
+  lastRoundResult: PublicRoundResult | null;
   nextRoundReady: boolean;
   gameOverResult: GameOverResult | null;
   errorMessage: string | null;
@@ -54,6 +56,7 @@ const initialState: GameState = {
   winsNeeded: 0,
   roundNumber: 0,
   hand: null,
+  supportOptions: [],
   matchWins: {},
   lastRoundResult: null,
   nextRoundReady: false,
@@ -88,21 +91,25 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, roomCode, playerId, opponentName }));
     });
 
-    socket.on("game_start", ({ roundsTarget, winsNeeded, roundNumber, hand, opponentName }) => {
-      setState((s) => ({
-        ...s,
-        roundsTarget,
-        winsNeeded,
-        roundNumber,
-        hand,
-        opponentName,
-        matchWins: {},
-        lastRoundResult: null,
-        gameOverResult: null,
-        nextRoundReady: false,
-        phase: "selecting",
-      }));
-    });
+    socket.on(
+      "game_start",
+      ({ roundsTarget, winsNeeded, roundNumber, hand, opponentName, supportOptions }) => {
+        setState((s) => ({
+          ...s,
+          roundsTarget,
+          winsNeeded,
+          roundNumber,
+          hand,
+          supportOptions,
+          opponentName,
+          matchWins: {},
+          lastRoundResult: null,
+          gameOverResult: null,
+          nextRoundReady: false,
+          phase: "selecting",
+        }));
+      },
+    );
 
     socket.on("round_result", ({ result, yourHand }) => {
       setState((s) => ({
@@ -114,9 +121,14 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
       }));
     });
 
-    socket.on("phase_changed", ({ phase }) => {
+    socket.on("phase_changed", ({ phase, supportOptions }) => {
       if (phase === "selecting") {
-        setState((s) => ({ ...s, nextRoundReady: true, roundNumber: s.roundNumber + 1 }));
+        setState((s) => ({
+          ...s,
+          nextRoundReady: true,
+          roundNumber: s.roundNumber + 1,
+          supportOptions,
+        }));
       }
     });
 
