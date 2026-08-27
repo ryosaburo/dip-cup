@@ -7,8 +7,16 @@ import type {
 
 /** Client -> Server */
 export interface ClientToServerEvents {
-  create_room: (payload: { rounds: RoundsOption; playerName: string }) => void;
-  join_room: (payload: { roomCode: string; playerName: string }) => void;
+  create_room: (payload: {
+    rounds: RoundsOption;
+    playerName: string;
+    accessToken?: string;
+  }) => void;
+  join_room: (payload: {
+    roomCode: string;
+    playerName: string;
+    accessToken?: string;
+  }) => void;
   select_cards: (payload: PlayerSelection) => void;
   leave_room: () => void;
 }

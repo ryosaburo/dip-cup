@@ -14,6 +14,7 @@ export interface ServerPlayer {
   playerId: string;
   socketId: string;
   name: string;
+  userId?: string;
   pendingSelection?: PlayerSelection;
 }
 
@@ -42,12 +43,18 @@ export class RoomManager {
     return code;
   }
 
-  createRoom(rounds: RoundsOption, hostSocketId: string, hostName: string): Room {
+  createRoom(
+    rounds: RoundsOption,
+    hostSocketId: string,
+    hostName: string,
+    hostUserId?: string,
+  ): Room {
     const roomCode = this.generateRoomCode();
     const host: ServerPlayer = {
       playerId: randomUUID(),
       socketId: hostSocketId,
       name: hostName,
+      userId: hostUserId,
     };
     const room: Room = {
       roomCode,
@@ -63,12 +70,12 @@ export class RoomManager {
     return room;
   }
 
-  joinRoom(roomCode: string, socketId: string, name: string): Room {
+  joinRoom(roomCode: string, socketId: string, name: string, userId?: string): Room {
     const room = this.rooms.get(roomCode.toUpperCase());
     if (!room) throw new Error("ルームが見つかりません");
     if (room.players.length >= 2) throw new Error("ルームは満員です");
 
-    const guest: ServerPlayer = { playerId: randomUUID(), socketId, name };
+    const guest: ServerPlayer = { playerId: randomUUID(), socketId, name, userId };
     room.players.push(guest);
     room.matchWins[guest.playerId] = 0;
     room.matchWins[room.players[0].playerId] = room.matchWins[room.players[0].playerId] ?? 0;

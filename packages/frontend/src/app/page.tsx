@@ -3,17 +3,23 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RoundsOption } from "@battle/shared";
+import { AuthPanel } from "@/components/AuthPanel";
+import { useAuth } from "@/context/AuthProvider";
 import { useGameSocket } from "@/context/GameSocketProvider";
 
 const ROUNDS_OPTIONS: RoundsOption[] = [1, 3, 5];
 
 export default function TopPage() {
   const router = useRouter();
+  const { session, displayName } = useAuth();
   const { state, createRoom, joinRoom, clearError } = useGameSocket();
 
-  const [playerName, setPlayerName] = useState("");
+  const [playerNameInput, setPlayerNameInput] = useState("");
   const [rounds, setRounds] = useState<RoundsOption>(3);
   const [joinCode, setJoinCode] = useState("");
+
+  // ログイン中はプロフィールの表示名を初期値にする（未編集の間だけ）。編集済みなら入力値を優先。
+  const playerName = playerNameInput || displayName || "";
 
   useEffect(() => {
     if (state.roomCode) {
@@ -31,6 +37,8 @@ export default function TopPage() {
           </p>
         </div>
 
+        <AuthPanel />
+
         {state.errorMessage && (
           <div className="rounded-md bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 flex justify-between items-center">
             <span>{state.errorMessage}</span>
@@ -45,7 +53,7 @@ export default function TopPage() {
           <input
             className="w-full border rounded-md px-3 py-2"
             value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
+            onChange={(e) => setPlayerNameInput(e.target.value)}
             placeholder="名前を入力"
             maxLength={20}
           />
@@ -68,7 +76,7 @@ export default function TopPage() {
           </div>
           <button
             disabled={!playerName.trim()}
-            onClick={() => createRoom(rounds, playerName.trim())}
+            onClick={() => createRoom(rounds, playerName.trim(), session?.access_token)}
             className="w-full rounded-md bg-black text-white py-2 disabled:opacity-40"
           >
             ルーム作成
@@ -86,7 +94,7 @@ export default function TopPage() {
           />
           <button
             disabled={!playerName.trim() || !joinCode.trim()}
-            onClick={() => joinRoom(joinCode.trim(), playerName.trim())}
+            onClick={() => joinRoom(joinCode.trim(), playerName.trim(), session?.access_token)}
             className="w-full rounded-md border py-2 disabled:opacity-40"
           >
             入室する
