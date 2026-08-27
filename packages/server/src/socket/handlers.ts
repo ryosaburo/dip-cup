@@ -2,6 +2,7 @@ import type { Server, Socket } from "socket.io";
 import {
   getMatchWinner,
   resolveRound,
+  toPublicRoundResult,
   buildInitialHand,
   type ClientToServerEvents,
   type ServerToClientEvents,
@@ -51,6 +52,7 @@ export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
             roundNumber: room.roundNumber,
             hand: { remaining: buildInitialHand() },
             opponentName: opponent.name,
+            supportOptions: player.dealtSupportOptions,
           });
         }
       } catch (err) {
@@ -89,7 +91,12 @@ function resolveAndBroadcastRound(io: TypedServer, roomManager: RoomManager, roo
   const winnerId = getMatchWinner(room.matchWins, room.winsNeeded);
   const hand = { remaining: buildInitialHand() };
 
-  io.to(room.roomCode).emit("round_result", { result, yourHand: hand });
+  for (const player of room.players) {
+    io.to(player.socketId).emit("round_result", {
+      result: toPublicRoundResult(result, player.playerId),
+      yourHand: hand,
+    });
+  }
 
   if (winnerId) {
     room.phase = "gameover";
@@ -100,7 +107,12 @@ function resolveAndBroadcastRound(io: TypedServer, roomManager: RoomManager, roo
 
   roomManager.resetForNextRound(room);
   room.phase = "selecting";
-  io.to(room.roomCode).emit("phase_changed", { phase: "selecting" });
+  for (const player of room.players) {
+    io.to(player.socketId).emit("phase_changed", {
+      phase: "selecting",
+      supportOptions: player.dealtSupportOptions,
+    });
+  }
 }
 
 /** ログイン済みプレイヤーが1人以上いる試合のみ対戦履歴を保存する */

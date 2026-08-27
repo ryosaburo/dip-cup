@@ -8,19 +8,19 @@ import {
   type CardTier,
   type HandPublicState,
   type PlayerSelection,
-  type RoundOutcome,
+  type PublicRoundOutcome,
   type SupportCardType,
 } from "@battle/shared";
 import { EmptyCardSlot, PromptCardFace, RevealPromptCard, SupportCardFace } from "./PlayingCard";
 
 const TIER_LABEL: Record<CardTier, string> = { small: "小", medium: "中", large: "大" };
 const TIERS: CardTier[] = ["small", "medium", "large"];
-const SUPPORT_TYPES: SupportCardType[] = ["mitigate", "sabotage", "boost"];
 
 export function PlayerHandPanel({
   name,
   matchWins,
   hand,
+  supportOptions,
   disabled,
   onSubmit,
   outcome,
@@ -29,9 +29,10 @@ export function PlayerHandPanel({
   name: string | null;
   matchWins: number;
   hand: HandPublicState;
+  supportOptions: SupportCardType[];
   disabled: boolean;
   onSubmit: (selection: PlayerSelection) => void;
-  outcome: RoundOutcome | null;
+  outcome: PublicRoundOutcome | null;
   revealed: boolean;
 }) {
   const [counts, setCounts] = useState<Record<CardTier, number>>({
@@ -92,21 +93,30 @@ export function PlayerHandPanel({
           </span>
         </div>
         <div className="space-y-1.5">
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap items-center">
             {outcome.selection.promptCardIds.length === 0 ? (
               <span className="text-white/50 text-xs py-2">カードを使用しませんでした</span>
             ) : (
               outcome.selection.promptCardIds.map((id, i) => (
-                <RevealPromptCard
+                <div
                   key={id}
-                  tier={tierOfCardId(id)}
-                  size="sm"
-                  revealed={revealed}
-                  delayMs={i * 180}
-                />
+                  className={outcome.voidedCardIds.includes(id) ? "opacity-30 grayscale" : ""}
+                >
+                  <RevealPromptCard tier={tierOfCardId(id)} size="sm" revealed={revealed} delayMs={i * 180} />
+                </div>
               ))
             )}
+            {outcome.selection.supportCard && (
+              <SupportCardFace
+                type={outcome.selection.supportCard}
+                label={SUPPORT_CARD_CONFIG[outcome.selection.supportCard].label}
+                size="sm"
+              />
+            )}
           </div>
+          {outcome.voidedCardIds.length > 0 && (
+            <p className="text-[0.65rem] text-red-300">相手の効果でカードが無効化されました</p>
+          )}
           <div
             className={`text-xs font-bold ${revealed ? "card-pop-in" : "opacity-0"} ${
               outcome.busted ? "text-red-400" : "text-white"
@@ -190,7 +200,7 @@ export function PlayerHandPanel({
       {/* Support cards */}
       <div className="space-y-1.5">
         <p className="text-white/60 text-[0.65rem]">
-          サポートカード（1ラウンド1枚まで／使わないとボーナス+15）
+          サポートカード（このラウンドはランダムで3枚配布／使わないとボーナス+15）
         </p>
         <div className="flex justify-center gap-2">
           <button
@@ -205,7 +215,7 @@ export function PlayerHandPanel({
           >
             使わない
           </button>
-          {SUPPORT_TYPES.map((type) => (
+          {supportOptions.map((type) => (
             <button
               key={type}
               type="button"

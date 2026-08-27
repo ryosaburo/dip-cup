@@ -1,8 +1,9 @@
 import type {
   PlayerSelection,
+  PublicRoundResult,
   RoomPhase,
-  RoundResult,
   RoundsOption,
+  SupportCardType,
 } from "./types.js";
 
 /** Client -> Server */
@@ -40,10 +41,11 @@ export interface ServerToClientEvents {
     roundNumber: number;
     hand: HandPublicState;
     opponentName: string;
+    supportOptions: SupportCardType[];
   }) => void;
-  phase_changed: (payload: { phase: RoomPhase }) => void;
+  phase_changed: (payload: { phase: RoomPhase; supportOptions: SupportCardType[] }) => void;
   round_result: (payload: {
-    result: RoundResult;
+    result: PublicRoundResult;
     yourHand: HandPublicState;
   }) => void;
   game_over: (payload: { winnerId: string; matchWins: Record<string, number> }) => void;

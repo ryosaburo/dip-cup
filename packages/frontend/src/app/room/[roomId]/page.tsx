@@ -75,6 +75,7 @@ export default function RoomPage() {
           winsNeeded={state.winsNeeded}
           phase={state.phase}
           hand={state.hand}
+          supportOptions={state.supportOptions}
           onSubmit={submitSelection}
           lastRoundResult={state.lastRoundResult}
           nextRoundReady={state.nextRoundReady}
