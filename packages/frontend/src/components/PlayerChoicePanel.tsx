@@ -9,6 +9,7 @@ import {
   type AttackSelection,
   type CardType,
   type DefenseSelection,
+  type DelusionEffect,
   type RealityCardId,
   type TurnResult,
 } from "@battle/shared";
@@ -73,6 +74,7 @@ export function PlayerChoicePanel({
   revealed: boolean;
 }) {
   const [choice, setChoice] = useState<Choice>(null);
+  const [delusionEffect, setDelusionEffect] = useState<DelusionEffect>("damage");
   const [delusionDamage, setDelusionDamage] = useState(
     Math.round((DELUSION_DAMAGE_MIN + DELUSION_DAMAGE_MAX) / 2),
   );
@@ -80,7 +82,7 @@ export function PlayerChoicePanel({
   function handleSubmitAttack() {
     if (!choice) return;
     if (choice.cardType === "delusion") {
-      onSubmitAttack({ cardType: "delusion", delusionDamage });
+      onSubmitAttack({ cardType: "delusion", delusionEffect, delusionDamage });
     } else {
       onSubmitAttack({ cardType: "reality", realityCardId: choice.realityCardId });
     }
@@ -92,7 +94,12 @@ export function PlayerChoicePanel({
         ? REALITY_CARD_CONFIG[outcome.attack.realityCardId].label
         : undefined;
     const effectiveDamage =
-      outcome.damageDealt || outcome.selfDamage || outcome.selfHeal || Math.abs(outcome.gaugeDelta) || undefined;
+      outcome.damageDealt ||
+      outcome.selfDamage ||
+      outcome.selfHeal ||
+      outcome.defenderHeal ||
+      Math.abs(outcome.gaugeDelta) ||
+      undefined;
 
     return (
       <div className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3">
@@ -171,7 +178,7 @@ export function PlayerChoicePanel({
             }`}
           >
             <div className="w-24 h-[72px] rounded-lg border-2 border-white shadow-md bg-gradient-to-br from-fuchsia-500 to-purple-800 text-white flex flex-col items-center justify-center gap-0.5">
-              <span className="text-[1.1em]">🌀</span>
+              <span className="text-[1.1em]">{delusionEffect === "heal" ? "💚" : "🌀"}</span>
               <span className="font-bold text-xs">妄想</span>
               <span className="text-[0.6em] opacity-90">自由{delusionDamage}</span>
             </div>
@@ -180,8 +187,32 @@ export function PlayerChoicePanel({
 
         {choice?.cardType === "delusion" && (
           <div className="space-y-1">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setDelusionEffect("damage")}
+                className={`flex-1 rounded-md py-1 text-[0.65rem] font-semibold border transition-colors ${
+                  delusionEffect === "damage"
+                    ? "bg-white text-black border-white"
+                    : "border-white/30 text-white/70"
+                }`}
+              >
+                ダメージ
+              </button>
+              <button
+                type="button"
+                onClick={() => setDelusionEffect("heal")}
+                className={`flex-1 rounded-md py-1 text-[0.65rem] font-semibold border transition-colors ${
+                  delusionEffect === "heal"
+                    ? "bg-white text-black border-white"
+                    : "border-white/30 text-white/70"
+                }`}
+              >
+                回復
+              </button>
+            </div>
             <div className="flex justify-between text-[0.65rem] text-white/60">
-              <span>申告ダメージ量</span>
+              <span>{delusionEffect === "heal" ? "申告回復量" : "申告ダメージ量"}</span>
               <span className="font-bold text-fuchsia-300">{delusionDamage}</span>
             </div>
             <input
@@ -193,7 +224,9 @@ export function PlayerChoicePanel({
               className="w-full accent-fuchsia-500"
             />
             <p className="text-[0.6rem] text-white/40">
-              見破られなければこの量がそのまま通る／見破られると自分に反動＋この量だけ妄想ゲージが上がる
+              {delusionEffect === "heal"
+                ? "見破られなければ自分がこの量だけ回復する／見破られると自分は回復できず、見破った相手がこの量だけ回復する（自分の妄想ゲージはこの量だけ上がる）"
+                : "見破られなければこの量がそのまま通る／見破られると自分に反動＋この量だけ妄想ゲージが上がる"}
             </p>
           </div>
         )}

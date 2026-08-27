@@ -171,6 +171,9 @@ function validateAttack(attack: AttackSelection, dealtRealityCards: RealityCardI
     }
   }
   if (attack.cardType === "delusion") {
+    if (attack.delusionEffect !== "damage" && attack.delusionEffect !== "heal") {
+      throw new Error("妄想カードの効果種別（ダメージ／回復）を指定してください");
+    }
     const damage = attack.delusionDamage;
     if (
       typeof damage !== "number" ||
@@ -179,7 +182,7 @@ function validateAttack(attack: AttackSelection, dealtRealityCards: RealityCardI
       damage > DELUSION_DAMAGE_MAX
     ) {
       throw new Error(
-        `妄想カードのダメージ量は${DELUSION_DAMAGE_MIN}〜${DELUSION_DAMAGE_MAX}の整数で指定してください`,
+        `妄想カードの申告量は${DELUSION_DAMAGE_MIN}〜${DELUSION_DAMAGE_MAX}の整数で指定してください`,
       );
     }
   }
