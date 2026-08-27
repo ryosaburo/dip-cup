@@ -30,13 +30,19 @@ npm install
 ```
 PORT=4000
 CORS_ORIGIN=http://localhost:3000
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
 `packages/frontend/.env.local`:
 
 ```
 NEXT_PUBLIC_WS_URL=http://localhost:4000
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
+
+Supabase関連の変数は任意。未設定でもゲスト対戦としてアプリは動作する（ログイン機能とその依存機能のみ無効化される）。設定する場合は `supabase/migrations/` 配下のSQLをSupabaseプロジェクトのSQL Editorで実行してテーブルを作成すること。
 
 ## 起動
 

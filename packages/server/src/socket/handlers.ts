@@ -7,15 +7,17 @@ import {
   type ServerToClientEvents,
 } from "@battle/shared";
 import { RoomManager, type Room } from "../rooms/RoomManager.js";
+import { supabaseAdmin, verifyAccessToken } from "../lib/supabase.js";
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
 export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
   io.on("connection", (socket: TypedSocket) => {
-    socket.on("create_room", ({ rounds, playerName }) => {
+    socket.on("create_room", async ({ rounds, playerName, accessToken }) => {
       try {
-        const room = roomManager.createRoom(rounds, socket.id, playerName);
+        const userId = await verifyAccessToken(accessToken);
+        const room = roomManager.createRoom(rounds, socket.id, playerName, userId);
         socket.join(room.roomCode);
         socket.emit("room_created", {
           roomCode: room.roomCode,
@@ -26,9 +28,10 @@ export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
       }
     });
 
-    socket.on("join_room", ({ roomCode, playerName }) => {
+    socket.on("join_room", async ({ roomCode, playerName, accessToken }) => {
       try {
-        const room = roomManager.joinRoom(roomCode, socket.id, playerName);
+        const userId = await verifyAccessToken(accessToken);
+        const room = roomManager.joinRoom(roomCode, socket.id, playerName, userId);
         socket.join(room.roomCode);
 
         const guest = room.players.find((p) => p.socketId === socket.id)!;
@@ -91,12 +94,37 @@ function resolveAndBroadcastRound(io: TypedServer, roomManager: RoomManager, roo
   if (winnerId) {
     room.phase = "gameover";
     io.to(room.roomCode).emit("game_over", { winnerId, matchWins: room.matchWins });
+    void saveMatchHistory(room, winnerId);
     return;
   }
 
   roomManager.resetForNextRound(room);
   room.phase = "selecting";
   io.to(room.roomCode).emit("phase_changed", { phase: "selecting" });
+}
+
+/** ログイン済みプレイヤーが1人以上いる試合のみ対戦履歴を保存する */
+async function saveMatchHistory(room: Room, winnerId: string) {
+  if (!supabaseAdmin) return;
+
+  const [player1, player2] = room.players;
+  if (!player1.userId && !player2.userId) return;
+
+  const winner = room.players.find((p) => p.playerId === winnerId);
+
+  const { error } = await supabaseAdmin.from("match_history").insert({
+    room_code: room.roomCode,
+    rounds_option: room.roundsOption,
+    player1_user_id: player1.userId ?? null,
+    player1_name: player1.name,
+    player1_wins: room.matchWins[player1.playerId] ?? 0,
+    player2_user_id: player2.userId ?? null,
+    player2_name: player2.name,
+    player2_wins: room.matchWins[player2.playerId] ?? 0,
+    winner_user_id: winner?.userId ?? null,
+  });
+
+  if (error) console.error("[supabase] match_history insert failed:", error.message);
 }
 
 function handleDisconnect(io: TypedServer, roomManager: RoomManager, socket: TypedSocket) {
