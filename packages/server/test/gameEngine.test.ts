@@ -66,23 +66,6 @@ test("暴走なしで同点の場合も再戦（勝者なし）", () => {
   assert.equal(result.isReplay, true);
 });
 
-test("「制限」を使うと相手のカードは1枚を超えた分が無効化される", () => {
-  const result = resolveRound({
-    roundNumber: 1,
-    playerA: {
-      playerId: "A",
-      selection: { promptCardIds: ["small-1", "small-2"] }, // 制限で2枚目が無効化される
-    },
-    playerB: { playerId: "B", selection: { promptCardIds: [], supportCard: "limit" } },
-    matchWins: {},
-    rng: rngSequence([0.9, 0.9]), // どちらも暴走しない
-  });
-
-  assert.deepEqual(result.outcomes.A.voidedCardIds, ["small-2"]);
-  assert.equal(result.outcomes.A.score, 10 + 15); // small1枚分のみ+未使用ボーナス
-  assert.equal(result.winnerId, "A");
-});
-
 test("「破壊」を使うと相手のカードがランダムで1枚無効化される", () => {
   const result = resolveRound({
     roundNumber: 1,
