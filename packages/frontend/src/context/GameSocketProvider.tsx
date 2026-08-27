@@ -63,8 +63,8 @@ const initialState: GameState = {
 
 interface GameSocketContextValue {
   state: GameState;
-  createRoom: (rounds: RoundsOption, playerName: string) => void;
-  joinRoom: (roomCode: string, playerName: string) => void;
+  createRoom: (rounds: RoundsOption, playerName: string, accessToken?: string) => void;
+  joinRoom: (roomCode: string, playerName: string, accessToken?: string) => void;
   submitSelection: (selection: PlayerSelection) => void;
   proceedToNextRound: () => void;
   clearError: () => void;
@@ -143,15 +143,25 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const createRoom = useCallback((rounds: RoundsOption, playerName: string) => {
-    setState((s) => ({ ...s, playerName }));
-    socketRef.current.emit("create_room", { rounds, playerName });
-  }, []);
+  const createRoom = useCallback(
+    (rounds: RoundsOption, playerName: string, accessToken?: string) => {
+      setState((s) => ({ ...s, playerName }));
+      socketRef.current.emit("create_room", { rounds, playerName, accessToken });
+    },
+    [],
+  );
 
-  const joinRoom = useCallback((roomCode: string, playerName: string) => {
-    setState((s) => ({ ...s, playerName }));
-    socketRef.current.emit("join_room", { roomCode: roomCode.toUpperCase(), playerName });
-  }, []);
+  const joinRoom = useCallback(
+    (roomCode: string, playerName: string, accessToken?: string) => {
+      setState((s) => ({ ...s, playerName }));
+      socketRef.current.emit("join_room", {
+        roomCode: roomCode.toUpperCase(),
+        playerName,
+        accessToken,
+      });
+    },
+    [],
+  );
 
   const submitSelection = useCallback((selection: PlayerSelection) => {
     setState((s) => ({ ...s, phase: "waiting_for_result" }));
