@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   DELUSION_DAMAGE_MAX,
   DELUSION_DAMAGE_MIN,
+  DELUSION_SUCCESS_WIN_COUNT,
   getAttackMagnitude,
   LIFE_DRAIN_MAX,
   LIFE_DRAIN_MIN,
@@ -26,10 +27,13 @@ function StatusHeader({
   name,
   life,
   gauge,
+  delusionSuccessCount,
 }: {
   name: string | null;
   life: number;
   gauge: number;
+  /** 見破られずに成功させた妄想カードの累計回数 */
+  delusionSuccessCount: number;
 }) {
   return (
     <>
@@ -45,6 +49,12 @@ function StatusHeader({
         <span className="text-fuchsia-300/80 text-[0.65rem] font-bold">{gauge}%</span>
       </div>
       <GaugeBar gauge={gauge} className="mb-2" />
+      <div className="flex items-center justify-between">
+        <span className="text-sky-300/80 text-[0.6rem]">妄想成功（見破られず）</span>
+        <span className="text-sky-300/80 text-[0.6rem] font-bold">
+          {delusionSuccessCount}/{DELUSION_SUCCESS_WIN_COUNT}
+        </span>
+      </div>
     </>
   );
 }
@@ -54,6 +64,7 @@ export function PlayerChoicePanel({
   opponentName,
   life,
   gauge,
+  delusionSuccessCount,
   phase,
   dealtRealityCards,
   pendingDamage,
@@ -67,6 +78,8 @@ export function PlayerChoicePanel({
   opponentName: string | null;
   life: number;
   gauge: number;
+  /** 見破られずに成功させた妄想カードの累計回数 */
+  delusionSuccessCount: number;
   phase: GamePhase;
   /** ランダムに配られた、このターンに選べる現実カード */
   dealtRealityCards: RealityCardId[];
@@ -113,7 +126,7 @@ export function PlayerChoicePanel({
 
     return (
       <div className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3">
-        <StatusHeader name={name} life={life} gauge={gauge} />
+        <StatusHeader name={name} life={life} gauge={gauge} delusionSuccessCount={delusionSuccessCount} />
         {wasAttackerInOutcome ? (
           <div className="flex items-center gap-3">
             <RevealCard
@@ -150,7 +163,7 @@ export function PlayerChoicePanel({
   if (phase === "my_attack") {
     return (
       <div className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 space-y-3">
-        <StatusHeader name={name} life={life} gauge={gauge} />
+        <StatusHeader name={name} life={life} gauge={gauge} delusionSuccessCount={delusionSuccessCount} />
 
         <div className="space-y-1.5">
           <p className="text-white/60 text-[0.65rem]">
@@ -278,7 +291,7 @@ export function PlayerChoicePanel({
   if (phase === "my_defense") {
     return (
       <div className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 space-y-3">
-        <StatusHeader name={name} life={life} gauge={gauge} />
+        <StatusHeader name={name} life={life} gauge={gauge} delusionSuccessCount={delusionSuccessCount} />
 
         <div className="rounded-md bg-white/10 px-3 py-3 text-center">
           <p className="text-white/70 text-[0.7rem] mb-1">{displayOpponentName}が攻撃してきました</p>
@@ -317,7 +330,7 @@ export function PlayerChoicePanel({
 
   return (
     <div className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3">
-      <StatusHeader name={name} life={life} gauge={gauge} />
+      <StatusHeader name={name} life={life} gauge={gauge} delusionSuccessCount={delusionSuccessCount} />
       <p className="text-white/50 text-xs text-center animate-pulse py-2">{waitingMessage}</p>
     </div>
   );

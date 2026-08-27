@@ -36,6 +36,8 @@ export interface Room {
   delusionGauges: Record<string, number>;
   /** 「疼く傷跡」による継続ダメージ（受けているプレイヤーのplayerId → 効果リスト） */
   lingeringWounds: Record<string, LingeringWound[]>;
+  /** 各プレイヤーが見破られずに成功させた妄想カードの累計回数 */
+  delusionSuccessCounts: Record<string, number>;
   players: ServerPlayer[];
 }
 
@@ -71,6 +73,7 @@ export class RoomManager {
       lifeTotals: { [host.playerId]: STARTING_LIFE },
       delusionGauges: { [host.playerId]: 0 },
       lingeringWounds: {},
+      delusionSuccessCounts: { [host.playerId]: 0 },
       players: [host],
     };
     this.rooms.set(roomCode, room);
@@ -92,6 +95,7 @@ export class RoomManager {
     room.players.push(guest);
     room.lifeTotals[guest.playerId] = STARTING_LIFE;
     room.delusionGauges[guest.playerId] = 0;
+    room.delusionSuccessCounts[guest.playerId] = 0;
     room.phase = "attacking";
     room.turnNumber = 1;
     // ホスト（先に部屋を作った側）が先攻

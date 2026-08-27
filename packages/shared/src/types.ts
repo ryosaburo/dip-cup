@@ -72,6 +72,8 @@ export interface TurnResult {
   lifeTotals: Record<string, number>;
   delusionGauges: Record<string, number>;
   lingeringWounds: Record<string, LingeringWound[]>;
+  /** 各プレイヤーが見破られずに成功させた妄想カードの累計回数（規定回数に達すると勝利） */
+  delusionSuccessCounts: Record<string, number>;
 }
 
 export interface GameOverResult {
@@ -79,4 +81,5 @@ export interface GameOverResult {
   winnerId: string | null;
   lifeTotals: Record<string, number>;
   delusionGauges: Record<string, number>;
+  delusionSuccessCounts: Record<string, number>;
 }
