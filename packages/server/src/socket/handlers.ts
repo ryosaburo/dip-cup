@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import {
   evaluateMatchOutcome,
-  getAttackDamage,
+  getAttackMagnitude,
   resolveTurn,
   type ClientToServerEvents,
   type DefenseSelection,
@@ -62,7 +62,12 @@ export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
     socket.on("submit_attack", (attack) => {
       try {
         const room = roomManager.submitAttack(socket.id, attack);
-        io.to(room.roomCode).emit("attack_submitted", { damage: getAttackDamage(attack) });
+        const attackerGauge = room.delusionGauges[room.attackerId] ?? 0;
+        io.to(room.roomCode).emit("attack_submitted", {
+          damage: getAttackMagnitude(attack, attackerGauge),
+          attackerId: room.attackerId,
+          turnNumber: room.turnNumber,
+        });
       } catch (err) {
         socket.emit("error", { message: (err as Error).message });
       }
@@ -99,10 +104,12 @@ function resolveAndBroadcastTurn(
     defense,
     lifeTotals: room.lifeTotals,
     delusionGauges: room.delusionGauges,
+    lingeringWounds: room.lingeringWounds,
   });
 
   room.lifeTotals = result.lifeTotals;
   room.delusionGauges = result.delusionGauges;
+  room.lingeringWounds = result.lingeringWounds;
 
   const { gameOver, winnerId } = evaluateMatchOutcome(room.lifeTotals, room.delusionGauges);
 

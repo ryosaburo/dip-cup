@@ -2,12 +2,13 @@
 
 import { STARTING_LIFE, type CardType } from "@battle/shared";
 
-export type CardSize = "sm" | "md" | "lg";
+export type CardSize = "sm" | "md" | "lg" | "custom";
 
 const SIZE_CLASS: Record<CardSize, string> = {
   sm: "w-12 h-[68px]",
   md: "w-16 h-[90px]",
   lg: "w-24 h-[136px]",
+  custom: "", // custom指定時は customClass を優先
 };
 
 /** 現在ライフ / 開始時ライフ の割合バー */
@@ -40,19 +41,31 @@ export function GaugeBar({ gauge, className = "" }: { gauge: number; className?:
   );
 }
 
+/** カードの基本クラスを生成するヘルパー関数 */
+function getCardSizeClass(size: CardSize, customClass?: string): string {
+  if (size === "custom" && customClass) {
+    return customClass;
+  }
+  return SIZE_CLASS[size] || SIZE_CLASS.md;
+}
+
 export function CardBack({
   size = "md",
+  customClass = "",
   className = "",
   style,
 }: {
   size?: CardSize;
+  customClass?: string;
   className?: string;
   style?: React.CSSProperties;
 }) {
+  const sizeClass = getCardSizeClass(size, customClass);
+
   return (
     <div
       style={style}
-      className={`${SIZE_CLASS[size]} rounded-lg border-2 border-white/70 shadow-md bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 flex items-center justify-center relative overflow-hidden ${className}`}
+      className={`${sizeClass} rounded-lg border-2 border-white/70 shadow-md bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 flex items-center justify-center relative overflow-hidden ${className}`}
     >
       <div className="absolute inset-1 rounded-md border border-white/25" />
       <span className="text-white/90 font-black text-[0.6em] tracking-widest rotate-[-20deg] select-none">
@@ -71,22 +84,29 @@ const CARD_TYPE_GRADIENT: Record<CardType, string> = {
 
 export function CardTypeFace({
   type,
+  label,
   damage,
   size = "md",
+  customClass = "",
   className = "",
 }: {
   type: CardType;
-  /** 妄想カードのみ、申告ダメージ量を表示する */
+  /** 現実カードの場合、具体的なカード名で上書きする */
+  label?: string;
+  /** 妄想カード、または現実カードの実ダメージ量を表示する */
   damage?: number;
   size?: CardSize;
+  customClass?: string;
   className?: string;
 }) {
+  const sizeClass = getCardSizeClass(size, customClass);
+
   return (
     <div
-      className={`${SIZE_CLASS[size]} rounded-lg border-2 border-white shadow-md bg-gradient-to-br ${CARD_TYPE_GRADIENT[type]} text-white flex flex-col items-center justify-center gap-0.5 select-none ${className}`}
+      className={`${sizeClass} rounded-lg border-2 border-white shadow-md bg-gradient-to-br ${CARD_TYPE_GRADIENT[type]} text-white flex flex-col items-center justify-center gap-0.5 text-center px-1 select-none ${className}`}
     >
       <span className="text-[1.3em] leading-none">{CARD_TYPE_ICON[type]}</span>
-      <span className="font-bold text-[0.8em] leading-none">{CARD_TYPE_LABEL[type]}</span>
+      <span className="font-bold text-[0.7em] leading-tight">{label ?? CARD_TYPE_LABEL[type]}</span>
       {damage !== undefined && (
         <span className="text-[0.65em] leading-none opacity-90">{damage}</span>
       )}
@@ -94,33 +114,67 @@ export function CardTypeFace({
   );
 }
 
+export function EmptyCardSlot({
+  size = "md",
+  customClass = "",
+  className = "",
+  label,
+}: {
+  size?: CardSize;
+  customClass?: string;
+  className?: string;
+  label?: string;
+}) {
+  const sizeClass = getCardSizeClass(size, customClass);
+
+  return (
+    <div
+      className={`${sizeClass} rounded-lg border-2 border-dashed border-white/30 flex items-center justify-center text-white/40 text-[0.6em] ${className}`}
+    >
+      {label}
+    </div>
+  );
+}
+
 /** 現実/妄想カードが伏せ状態から表向きに反転するアニメーション */
 export function RevealCard({
   type,
+  label,
   damage,
   size = "md",
+  customClass = "",
   revealed,
   delayMs = 0,
   className = "",
 }: {
   type: CardType;
+  label?: string;
   damage?: number;
   size?: CardSize;
+  customClass?: string;
   revealed: boolean;
   delayMs?: number;
   className?: string;
 }) {
+  const sizeClass = getCardSizeClass(size, customClass);
+
   return (
     <div
-      className={`card-3d-scene card-deal-in ${SIZE_CLASS[size]} ${className}`}
+      className={`card-3d-scene card-deal-in ${sizeClass} ${className}`}
       style={{ animationDelay: `${delayMs}ms` }}
     >
       <div className={`card-3d-inner ${revealed ? "is-flipped" : ""}`}>
         <div className="card-3d-face">
-          <CardBack size={size} />
+          <CardBack size={size} customClass={customClass} />
         </div>
         <div className="card-3d-face card-3d-face-back">
-          <CardTypeFace type={type} damage={damage} size={size} />
+          <CardTypeFace
+            type={type}
+            label={label}
+            damage={damage}
+            size={size}
+            customClass={customClass}
+          />
         </div>
       </div>
     </div>

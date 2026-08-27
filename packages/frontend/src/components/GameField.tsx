@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type {
-  AttackSelection,
-  CardType,
-  DefenseSelection,
-  TurnResult,
+import {
+  REALITY_CARD_CONFIG,
+  type AttackSelection,
+  type CardType,
+  type DefenseSelection,
+  type TurnResult,
 } from "@battle/shared";
 import type { GamePhase } from "@/context/GameSocketProvider";
 import { OpponentPanel } from "./OpponentPanel";
@@ -13,22 +14,58 @@ import { PlayerChoicePanel } from "./PlayerChoicePanel";
 
 const CARD_TYPE_LABEL: Record<CardType, string> = { reality: "現実", delusion: "妄想" };
 
-function describeForViewer(result: TurnResult, viewerWasAttacker: boolean): string {
-  const label = CARD_TYPE_LABEL[result.attack.cardType];
-  if (viewerWasAttacker) {
-    if (result.wasCaught) {
-      return `😱 自分の「${label}」を見破られた！${result.selfDamage}の反動ダメージ${
-        result.instantDefeat ? "…現実に引き戻された！" : ""
-      }`;
-    }
-    return `🎉 自分の「${label}」は見破られなかった！相手に${result.damageDealt}ダメージ！`;
+function cardLabel(attack: TurnResult["attack"]): string {
+  if (attack.cardType === "reality" && attack.realityCardId) {
+    return REALITY_CARD_CONFIG[attack.realityCardId].label;
   }
+  return CARD_TYPE_LABEL[attack.cardType];
+}
+
+/** そのターンの数値効果（ダメージ・回復・ゲージ増減）を箇条書き文字列にまとめる */
+function describeAttackEffect(result: TurnResult): string {
+  const parts: string[] = [];
   if (result.wasCaught) {
-    return `🎯 相手の「${label}」を見破った！${result.selfDamage}の反動ダメージ${
-      result.instantDefeat ? "…相手は現実に引き戻された！" : ""
-    }`;
+    if (result.selfDamage > 0) parts.push(`自分に${result.selfDamage}の反動ダメージ`);
+  } else {
+    if (result.damageDealt > 0) parts.push(`相手に${result.damageDealt}ダメージ`);
   }
-  return `😱 相手の「${label}」を見破れなかった…${result.damageDealt}ダメージを受けた`;
+  if (result.selfHeal > 0) parts.push(`自分のライフが${result.selfHeal}回復`);
+  if (result.gaugeDelta > 0) parts.push(`妄想ゲージ+${result.gaugeDelta}%`);
+  if (result.gaugeDelta < 0) parts.push(`妄想ゲージ${result.gaugeDelta}%`);
+  if (result.wasCaught && result.instantDefeat) parts.push("現実に引き戻された！");
+  return parts.join("・");
+}
+
+function describeForViewer(result: TurnResult, viewerWasAttacker: boolean): string {
+  const label = cardLabel(result.attack);
+  const effect = describeAttackEffect(result);
+  const suffix = effect ? `：${effect}` : "";
+  if (viewerWasAttacker) {
+    return result.wasCaught
+      ? `😱 自分の「${label}」を見破られた${suffix}`
+      : `🎉 自分の「${label}」は見破られなかった${suffix}`;
+  }
+  return result.wasCaught
+    ? `🎯 相手の「${label}」を見破った${suffix}`
+    : `😱 相手の「${label}」を見破れなかった${suffix}`;
+}
+
+/** 継続ダメージ／継続回復（符号付きdotDamage）を1行で表示する。0の場合は何も出さない */
+function DotLine({ amount, target }: { amount: number; target: "self" | "opponent" }) {
+  if (amount === 0) return null;
+  const who = target === "self" ? "自分" : "相手";
+  if (amount > 0) {
+    return (
+      <p className="text-red-300 text-[0.65rem] mt-0.5">
+        🩸継続ダメージで{who}に{amount}
+      </p>
+    );
+  }
+  return (
+    <p className="text-emerald-300 text-[0.65rem] mt-0.5">
+      💚継続回復で{who}に{-amount}回復
+    </p>
+  );
 }
 
 export function GameField({
@@ -104,6 +141,10 @@ export function GameField({
                   <p className="text-white font-bold text-xs">
                     {describeForViewer(lastTurnResult!, iWasAttacker!)}
                   </p>
+                  <DotLine amount={lastTurnResult!.dotDamage[playerId] ?? 0} target="self" />
+                  {opponentId && (
+                    <DotLine amount={lastTurnResult!.dotDamage[opponentId] ?? 0} target="opponent" />
+                  )}
                   <button
                     disabled={!nextTurnReady}
                     onClick={onNextTurn}

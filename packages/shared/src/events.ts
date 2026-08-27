@@ -33,7 +33,7 @@ export interface ServerToClientEvents {
     attackerId: string;
   }) => void;
   /** 攻撃側が攻撃を確定した合図。防御側はこのダメージ量を見てから予想する（カード種別は伏せる） */
-  attack_submitted: (payload: { damage: number }) => void;
+  attack_submitted: (payload: { damage: number; attackerId: string; turnNumber: number }) => void;
   turn_result: (payload: { result: TurnResult; nextAttackerId: string }) => void;
   game_over: (payload: {
     winnerId: string | null;

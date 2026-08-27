@@ -1,6 +1,6 @@
 "use client";
 
-import type { CardType, TurnResult } from "@battle/shared";
+import { REALITY_CARD_CONFIG, type CardType, type TurnResult } from "@battle/shared";
 import { CardBack, GaugeBar, LifeBar, RevealCard } from "./PlayingCard";
 
 const CARD_TYPE_LABEL: Record<CardType, string> = { reality: "現実", delusion: "妄想" };
@@ -44,7 +44,18 @@ export function OpponentPanel({
           <div className="flex items-center gap-3">
             <RevealCard
               type={outcome.attack.cardType}
-              damage={outcome.attack.delusionDamage}
+              label={
+                outcome.attack.cardType === "reality" && outcome.attack.realityCardId
+                  ? REALITY_CARD_CONFIG[outcome.attack.realityCardId].label
+                  : undefined
+              }
+              damage={
+                outcome.damageDealt ||
+                outcome.selfDamage ||
+                outcome.selfHeal ||
+                Math.abs(outcome.gaugeDelta) ||
+                undefined
+              }
               size="sm"
               revealed={revealed}
             />

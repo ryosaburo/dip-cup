@@ -2,9 +2,11 @@ import { randomUUID } from "node:crypto";
 import {
   DELUSION_DAMAGE_MAX,
   DELUSION_DAMAGE_MIN,
+  REALITY_CARD_IDS,
   STARTING_LIFE,
   type AttackSelection,
   type DefenseSelection,
+  type LingeringWound,
   type RoomPhase,
 } from "@battle/shared";
 
@@ -27,6 +29,8 @@ export interface Room {
   pendingAttack?: AttackSelection;
   lifeTotals: Record<string, number>;
   delusionGauges: Record<string, number>;
+  /** 「疼く傷跡」による継続ダメージ（受けているプレイヤーのplayerId → 効果リスト） */
+  lingeringWounds: Record<string, LingeringWound[]>;
   players: ServerPlayer[];
 }
 
@@ -60,6 +64,7 @@ export class RoomManager {
       attackerId: host.playerId,
       lifeTotals: { [host.playerId]: STARTING_LIFE },
       delusionGauges: { [host.playerId]: 0 },
+      lingeringWounds: {},
       players: [host],
     };
     this.rooms.set(roomCode, room);
@@ -153,6 +158,11 @@ export class RoomManager {
 function validateAttack(attack: AttackSelection): void {
   if (attack.cardType !== "reality" && attack.cardType !== "delusion") {
     throw new Error("不正なカード種別です");
+  }
+  if (attack.cardType === "reality") {
+    if (!attack.realityCardId || !REALITY_CARD_IDS.includes(attack.realityCardId)) {
+      throw new Error("不正な現実カードです");
+    }
   }
   if (attack.cardType === "delusion") {
     const damage = attack.delusionDamage;

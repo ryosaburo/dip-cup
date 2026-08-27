@@ -114,11 +114,16 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
       },
     );
 
-    socket.on("attack_submitted", ({ damage }) => {
+    socket.on("attack_submitted", ({ damage, attackerId, turnNumber }) => {
       setState((s) => ({
         ...s,
+        turnNumber,
+        attackerId,
         pendingDamage: damage,
-        phase: s.attackerId === s.playerId ? "waiting_defense" : "my_defense",
+        lastTurnResult: null,
+        nextAttackerId: null,
+        nextTurnReady: false,
+        phase: attackerId === s.playerId ? "waiting_defense" : "my_defense",
       }));
     });
 
