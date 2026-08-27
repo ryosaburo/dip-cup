@@ -4,7 +4,6 @@ export type SupportCardType =
   | "mitigate"
   | "sabotage"
   | "boost"
-  | "limit"
   | "randomBoost"
   | "removeCard"
   | "curse"
@@ -40,7 +39,7 @@ export interface PlayerPublicInfo {
 export interface RoundOutcome {
   playerId: string;
   selection: PlayerSelection;
-  /** 相手の「制限」「破壊」で無効化されたプロンプトカードid（元のselectionには残る） */
+  /** 相手の「破壊」で無効化されたプロンプトカードid（元のselectionには残る） */
   voidedCardIds: string[];
   overlearnChance: number;
   roll: number;
