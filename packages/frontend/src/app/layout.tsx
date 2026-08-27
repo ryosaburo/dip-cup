@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AIエージェント学習対戦",
-  description: "プロンプトカードで過学習リスクを取り合う2人対戦ゲーム",
+  description: "「現実」か「妄想」かを読み合い、見破り／見破られで攻防するライフ制2人対戦ゲーム",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
