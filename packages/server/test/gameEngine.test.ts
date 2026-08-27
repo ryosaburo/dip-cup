@@ -301,12 +301,12 @@ test("「無理な回復」はライフ部分のみ見破りで防御側回復�
     defenderId: "B",
     attack: { cardType: "reality", realityCardId: "reckless_recovery" },
     defense: { prediction: "delusion" },
-    lifeTotals: { A: 60, B: 100 },
+    lifeTotals: { A: 40, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
   });
-  assert.equal(success.selfHeal, 20);
-  assert.equal(success.lifeTotals.A, 80);
+  assert.equal(success.selfHeal, 50);
+  assert.equal(success.lifeTotals.A, 90);
   assert.equal(success.gaugeDelta, 20);
   assert.equal(success.delusionGauges.A, 20);
 
@@ -316,16 +316,54 @@ test("「無理な回復」はライフ部分のみ見破りで防御側回復�
     defenderId: "B",
     attack: { cardType: "reality", realityCardId: "reckless_recovery" },
     defense: { prediction: "reality" },
-    lifeTotals: { A: 60, B: 70 },
+    lifeTotals: { A: 60, B: 40 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
   });
   assert.equal(caught.selfDamage, 0);
-  assert.equal(caught.defenderHeal, 20);
+  assert.equal(caught.defenderHeal, 50);
   assert.equal(caught.lifeTotals.A, 60);
   assert.equal(caught.lifeTotals.B, 90);
   assert.equal(caught.gaugeDelta, 20); // 見破られてもゲージ上昇は反転しない
   assert.equal(caught.delusionGauges.A, 20);
+});
+
+test("「吸血」は成功すると申告量のダメージを与えて同量回復し、見破られると回復できず反動ダメージのみになる", () => {
+  const success = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "reality", realityCardId: "life_drain", realityAmount: 35 },
+    defense: { prediction: "delusion" },
+    lifeTotals: { A: 40, B: 100 },
+    delusionGauges: { A: 0, B: 0 },
+    lingeringWounds: noWounds,
+  });
+  assert.equal(success.damageDealt, 35);
+  assert.equal(success.selfHeal, 35);
+  assert.equal(success.selfDamage, 0);
+  assert.equal(success.defenderHeal, 0);
+  assert.equal(success.lifeTotals.A, 75);
+  assert.equal(success.lifeTotals.B, 65);
+  assert.equal(success.gaugeDelta, 0);
+
+  const caught = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "reality", realityCardId: "life_drain", realityAmount: 35 },
+    defense: { prediction: "reality" },
+    lifeTotals: { A: 40, B: 100 },
+    delusionGauges: { A: 0, B: 0 },
+    lingeringWounds: noWounds,
+  });
+  assert.equal(caught.damageDealt, 0);
+  assert.equal(caught.selfHeal, 0);
+  assert.equal(caught.defenderHeal, 0);
+  assert.equal(caught.selfDamage, 35);
+  assert.equal(caught.lifeTotals.A, 5);
+  assert.equal(caught.lifeTotals.B, 100);
+  assert.equal(caught.gaugeDelta, 0); // 単純な攻撃カードと同じくゲージ変動なし
 });
 
 test("「緩やかな回復」は成功すると3ターン継続回復、見破られると見破った相手が3ターン継続回復する", () => {

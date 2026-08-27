@@ -5,6 +5,8 @@ import {
   DELUSION_DAMAGE_MAX,
   DELUSION_DAMAGE_MIN,
   getAttackMagnitude,
+  LIFE_DRAIN_MAX,
+  LIFE_DRAIN_MIN,
   REALITY_CARD_CONFIG,
   type AttackSelection,
   type CardType,
@@ -49,6 +51,7 @@ function StatusHeader({
 
 export function PlayerChoicePanel({
   name,
+  opponentName,
   life,
   gauge,
   phase,
@@ -61,6 +64,7 @@ export function PlayerChoicePanel({
   revealed,
 }: {
   name: string | null;
+  opponentName: string | null;
   life: number;
   gauge: number;
   phase: GamePhase;
@@ -73,16 +77,22 @@ export function PlayerChoicePanel({
   wasAttackerInOutcome: boolean;
   revealed: boolean;
 }) {
+  const displayOpponentName = opponentName ?? "相手";
   const [choice, setChoice] = useState<Choice>(null);
   const [delusionEffect, setDelusionEffect] = useState<DelusionEffect>("damage");
   const [delusionDamage, setDelusionDamage] = useState(
     Math.round((DELUSION_DAMAGE_MIN + DELUSION_DAMAGE_MAX) / 2),
+  );
+  const [lifeDrainAmount, setLifeDrainAmount] = useState(
+    Math.round((LIFE_DRAIN_MIN + LIFE_DRAIN_MAX) / 2),
   );
 
   function handleSubmitAttack() {
     if (!choice) return;
     if (choice.cardType === "delusion") {
       onSubmitAttack({ cardType: "delusion", delusionEffect, delusionDamage });
+    } else if (choice.realityCardId === "life_drain") {
+      onSubmitAttack({ cardType: "reality", realityCardId: "life_drain", realityAmount: lifeDrainAmount });
     } else {
       onSubmitAttack({ cardType: "reality", realityCardId: choice.realityCardId });
     }
@@ -124,7 +134,7 @@ export function PlayerChoicePanel({
         ) : (
           <div className={`text-xs ${revealed ? "card-pop-in" : "opacity-0"}`}>
             <p className="text-white/70 mb-1">
-              自分の予想：「{CARD_TYPE_LABEL[outcome.defense.prediction]}」
+              {name ?? "自分"}の予想：「{CARD_TYPE_LABEL[outcome.defense.prediction]}」
             </p>
             <p
               className={`font-bold ${outcome.wasCaught ? "text-emerald-400" : "text-red-400"}`}
@@ -150,7 +160,10 @@ export function PlayerChoicePanel({
           <div className="grid grid-cols-3 gap-1.5">
             {dealtRealityCards.map((id) => {
               const config = REALITY_CARD_CONFIG[id];
-              const previewDamage = getAttackMagnitude({ cardType: "reality", realityCardId: id }, gauge);
+              const previewDamage =
+                id === "life_drain"
+                  ? `${LIFE_DRAIN_MIN}〜${LIFE_DRAIN_MAX}`
+                  : getAttackMagnitude({ cardType: "reality", realityCardId: id }, gauge);
               const selected = choice?.cardType === "reality" && choice.realityCardId === id;
               return (
                 <button
@@ -184,6 +197,26 @@ export function PlayerChoicePanel({
             </div>
           </button>
         </div>
+
+        {choice?.cardType === "reality" && choice.realityCardId === "life_drain" && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-[0.65rem] text-white/60">
+              <span>吸血の申告ダメージ量</span>
+              <span className="font-bold text-sky-300">{lifeDrainAmount}</span>
+            </div>
+            <input
+              type="range"
+              min={LIFE_DRAIN_MIN}
+              max={LIFE_DRAIN_MAX}
+              value={lifeDrainAmount}
+              onChange={(e) => setLifeDrainAmount(Number(e.target.value))}
+              className="w-full accent-sky-400"
+            />
+            <p className="text-[0.6rem] text-white/40">
+              見破られなければこの量だけ相手にダメージを与え、同じ量だけ自分が回復する／見破られると回復できず、この量の反動ダメージが自分に入る
+            </p>
+          </div>
+        )}
 
         {choice?.cardType === "delusion" && (
           <div className="space-y-1">
@@ -248,7 +281,7 @@ export function PlayerChoicePanel({
         <StatusHeader name={name} life={life} gauge={gauge} />
 
         <div className="rounded-md bg-white/10 px-3 py-3 text-center">
-          <p className="text-white/70 text-[0.7rem] mb-1">相手が攻撃してきました</p>
+          <p className="text-white/70 text-[0.7rem] mb-1">{displayOpponentName}が攻撃してきました</p>
           <p className="text-white font-bold text-2xl">{pendingDamage}ダメージ</p>
         </div>
         <p className="text-white/60 text-[0.65rem] text-center">
@@ -277,9 +310,9 @@ export function PlayerChoicePanel({
   // waiting_attack / waiting_defense / waiting_for_result
   const waitingMessage =
     phase === "waiting_attack"
-      ? "相手の攻撃を待っています…"
+      ? `${displayOpponentName}の攻撃を待っています…`
       : phase === "waiting_defense"
-        ? "相手が見破ろうとしています…"
+        ? `${displayOpponentName}が見破ろうとしています…`
         : "判定中…";
 
   return (

@@ -16,7 +16,7 @@ export const DELUSION_DAMAGE_MAX = 60;
 /** 攻撃側にランダムで配られる現実カードの枚数（この中から1枚を選んで出す） */
 export const REALITY_HAND_SIZE = 3;
 
-/** 現実カードは全部でこの11種類あり、ターンごとにこの中からランダムに配られる */
+/** 現実カードは全部でこの12種類あり、ターンごとにこの中からランダムに配られる */
 export const REALITY_CARD_IDS: RealityCardId[] = [
   "steady_strike",
   "overload_strike",
@@ -29,7 +29,12 @@ export const REALITY_CARD_IDS: RealityCardId[] = [
   "meditation",
   "reckless_recovery",
   "slow_recovery",
+  "life_drain",
 ];
+
+/** 「吸血」で申告できるダメージ量の範囲 */
+export const LIFE_DRAIN_MIN = 1;
+export const LIFE_DRAIN_MAX = 50;
 
 export const REALITY_CARD_CONFIG: Record<RealityCardId, { label: string; description: string }> = {
   steady_strike: {
@@ -62,12 +67,17 @@ export const REALITY_CARD_CONFIG: Record<RealityCardId, { label: string; descrip
   reckless_recovery: {
     label: "無理な回復",
     description:
-      "自分のライフを20回復する（見破られると自分は回復できず、見破った相手が20回復する）。見破られたかに関わらず、自分の妄想ゲージは常に20%上がる",
+      "自分のライフを50回復する（見破られると自分は回復できず、見破った相手が50回復する）。見破られたかに関わらず、自分の妄想ゲージは常に20%上がる",
   },
   slow_recovery: {
     label: "緩やかな回復",
     description:
       "以後3ターン、ターン終了時ごとに自分のライフが10回復する（見破られると自分は回復できず、以後3ターン見破った相手のライフが10ずつ回復する）",
+  },
+  life_drain: {
+    label: "吸血",
+    description:
+      "1〜50の範囲で申告したダメージを相手に与え、同じ量だけ自分が回復する（見破られると回復はできず、申告した量の反動ダメージが自分に入る）",
   },
 };
 
@@ -91,7 +101,7 @@ export const RESTFUL_RECOVERY_AMOUNT = 30;
 
 export const MEDITATION_GAUGE_AMOUNT = 30;
 
-export const RECKLESS_RECOVERY_LIFE_AMOUNT = 20;
+export const RECKLESS_RECOVERY_LIFE_AMOUNT = 50;
 export const RECKLESS_RECOVERY_GAUGE_AMOUNT = 20;
 
 export const SLOW_RECOVERY_TICK_AMOUNT = 10;

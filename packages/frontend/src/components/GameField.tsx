@@ -23,13 +23,18 @@ function cardLabel(attack: TurnResult["attack"]): string {
 }
 
 /**
- * そのターンの数値効果（ダメージ・回復・ゲージ増減）を、見ている側の視点に合わせた
- * 「自分」「相手」の主語で箇条書き文字列にまとめる。
+ * そのターンの数値効果（ダメージ・回復・ゲージ増減）を、見ている側の視点に合わせて
+ * プレイヤー名を主語に箇条書き文字列にまとめる。
  * damageDealt・defenderHealは防御側が対象、selfDamage・selfHeal・gaugeDeltaは攻撃側が対象。
  */
-function describeAttackEffect(result: TurnResult, viewerWasAttacker: boolean): string {
-  const attackerSideLabel = viewerWasAttacker ? "自分" : "相手";
-  const defenderSideLabel = viewerWasAttacker ? "相手" : "自分";
+function describeAttackEffect(
+  result: TurnResult,
+  viewerWasAttacker: boolean,
+  viewerName: string,
+  opponentName: string,
+): string {
+  const attackerSideLabel = viewerWasAttacker ? viewerName : opponentName;
+  const defenderSideLabel = viewerWasAttacker ? opponentName : viewerName;
   const parts: string[] = [];
   if (result.wasCaught) {
     if (result.selfDamage > 0) parts.push(`${attackerSideLabel}に${result.selfDamage}の反動ダメージ`);
@@ -44,24 +49,28 @@ function describeAttackEffect(result: TurnResult, viewerWasAttacker: boolean): s
   return parts.join("・");
 }
 
-function describeForViewer(result: TurnResult, viewerWasAttacker: boolean): string {
+function describeForViewer(
+  result: TurnResult,
+  viewerWasAttacker: boolean,
+  viewerName: string,
+  opponentName: string,
+): string {
   const label = cardLabel(result.attack);
-  const effect = describeAttackEffect(result, viewerWasAttacker);
+  const effect = describeAttackEffect(result, viewerWasAttacker, viewerName, opponentName);
   const suffix = effect ? `：${effect}` : "";
   if (viewerWasAttacker) {
     return result.wasCaught
-      ? `😱 自分の「${label}」を見破られた${suffix}`
-      : `🎉 自分の「${label}」は見破られなかった${suffix}`;
+      ? `😱 ${viewerName}の「${label}」を見破られた${suffix}`
+      : `🎉 ${viewerName}の「${label}」は見破られなかった${suffix}`;
   }
   return result.wasCaught
-    ? `🎯 相手の「${label}」を見破った${suffix}`
-    : `😱 相手の「${label}」を見破れなかった${suffix}`;
+    ? `🎯 ${opponentName}の「${label}」を見破った${suffix}`
+    : `😱 ${opponentName}の「${label}」を見破れなかった${suffix}`;
 }
 
 /** 継続ダメージ／継続回復（符号付きdotDamage）を1行で表示する。0の場合は何も出さない */
-function DotLine({ amount, target }: { amount: number; target: "self" | "opponent" }) {
+function DotLine({ amount, who }: { amount: number; who: string }) {
   if (amount === 0) return null;
-  const who = target === "self" ? "自分" : "相手";
   if (amount > 0) {
     return (
       <p className="text-red-300 text-[0.65rem] mt-0.5">
@@ -116,6 +125,8 @@ export function GameField({
 
   const isResult = phase === "turn_result" && lastTurnResult !== null;
   const iWasAttacker = isResult ? lastTurnResult!.attackerId === playerId : null;
+  const displayPlayerName = playerName ?? "自分";
+  const displayOpponentName = opponentName ?? "相手";
 
   // 現在進行中のターンでの役割（結果表示中は直前ターンの役割をそのまま使う）
   const iAmAttackerNow =
@@ -150,11 +161,11 @@ export function GameField({
               {isResult && (
                 <div className="banner-pop text-center">
                   <p className="text-white font-bold text-xs">
-                    {describeForViewer(lastTurnResult!, iWasAttacker!)}
+                    {describeForViewer(lastTurnResult!, iWasAttacker!, displayPlayerName, displayOpponentName)}
                   </p>
-                  <DotLine amount={lastTurnResult!.dotDamage[playerId] ?? 0} target="self" />
+                  <DotLine amount={lastTurnResult!.dotDamage[playerId] ?? 0} who={displayPlayerName} />
                   {opponentId && (
-                    <DotLine amount={lastTurnResult!.dotDamage[opponentId] ?? 0} target="opponent" />
+                    <DotLine amount={lastTurnResult!.dotDamage[opponentId] ?? 0} who={displayOpponentName} />
                   )}
                   <button
                     disabled={!nextTurnReady}
@@ -170,6 +181,7 @@ export function GameField({
             <PlayerChoicePanel
               key={turnNumber}
               name={playerName}
+              opponentName={opponentName}
               life={yourLife}
               gauge={yourGauge}
               phase={phase}
