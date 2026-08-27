@@ -1,12 +1,36 @@
 export type CardType = "reality" | "delusion";
 
+/** 現実カードの種類。攻撃側は妄想カードの代わりにこの中から1枚を選んで出す */
+export type RealityCardId =
+  | "steady_strike"
+  | "overload_strike"
+  | "lingering_wound"
+  | "gauge_drain"
+  | "heavy_strike"
+  | "quick_strike"
+  | "minor_strike"
+  | "restful_recovery"
+  | "meditation"
+  | "reckless_recovery"
+  | "slow_recovery";
+
 export type RoomPhase = "waiting" | "attacking" | "defending" | "gameover";
 
 /** 攻撃側がそのターンに出す内容 */
 export interface AttackSelection {
   cardType: CardType;
+  /** 現実カードを選んだ場合のみ、どの現実カードかを指定する */
+  realityCardId?: RealityCardId;
   /** 妄想カードを選んだ場合のみ、その場で申告する攻撃ダメージ量 */
   delusionDamage?: number;
+}
+
+/** ターン終了時ごとに発生する継続効果（「疼く傷跡」「緩やかな回復」など） */
+export interface LingeringWound {
+  /** 正ならダメージ、負なら回復（例: -10は毎ターン終了時にライフ+10） */
+  damage: number;
+  /** これから追加で効果が発生する残りターン数 */
+  turnsRemaining: number;
 }
 
 /** 防御側がそのターンに出す予想 */
@@ -27,12 +51,17 @@ export interface TurnResult {
   damageDealt: number;
   /** 見破られたことで攻撃側が受けた反動ダメージ（見破られていなければ0） */
   selfDamage: number;
+  /** 回復系カードの成功によって攻撃側が回復したライフ（対象外なら0） */
+  selfHeal: number;
   /** このターンでの攻撃側の妄想ゲージの増減 */
   gaugeDelta: number;
   /** 見破られた妄想カードの敗北抽選に外れて攻撃側が即敗北したか */
   instantDefeat: boolean;
+  /** このターン終了時に継続効果として各プレイヤーが受けたライフ変化量（正はダメージ、負は回復） */
+  dotDamage: Record<string, number>;
   lifeTotals: Record<string, number>;
   delusionGauges: Record<string, number>;
+  lingeringWounds: Record<string, LingeringWound[]>;
 }
 
 export interface GameOverResult {
