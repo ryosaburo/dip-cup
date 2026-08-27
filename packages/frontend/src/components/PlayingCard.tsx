@@ -69,7 +69,7 @@ export function CardBack({
     >
       <div className="absolute inset-1 rounded-md border border-white/25" />
       <span className="text-white/90 font-black text-[0.6em] tracking-widest rotate-[-20deg] select-none">
-        AI
+        ？
       </span>
     </div>
   );

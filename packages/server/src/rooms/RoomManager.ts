@@ -98,8 +98,8 @@ export class RoomManager {
     room.delusionSuccessCounts[guest.playerId] = 0;
     room.phase = "attacking";
     room.turnNumber = 1;
-    // ホスト（先に部屋を作った側）が先攻
-    room.attackerId = room.players[0].playerId;
+    // 先攻はランダムに決定する
+    room.attackerId = room.players[Math.floor(Math.random() * 2)].playerId;
     room.dealtRealityCards = dealRealityCards();
     this.socketToRoom.set(socketId, room.roomCode);
     return room;
