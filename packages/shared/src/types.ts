@@ -1,86 +1,43 @@
-export type CardTier = "small" | "medium" | "large";
+export type CardType = "reality" | "delusion";
 
-export type SupportCardType =
-  | "mitigate"
-  | "sabotage"
-  | "boost"
-  | "randomBoost"
-  | "removeCard"
-  | "curse"
-  | "peek";
+export type RoomPhase = "waiting" | "attacking" | "defending" | "gameover";
 
-export type RoundsOption = 1 | 3 | 5;
-
-export type RoomPhase =
-  | "waiting"
-  | "selecting"
-  | "revealing"
-  | "result"
-  | "gameover";
-
-/** 1枚のプロンプトカード（手札内で一意なid、例: "small-2"） */
-export interface PromptCardInstance {
-  id: string;
-  tier: CardTier;
+/** 攻撃側がそのターンに出す内容 */
+export interface AttackSelection {
+  cardType: CardType;
+  /** 妄想カードを選んだ場合のみ、その場で申告する攻撃ダメージ量 */
+  delusionDamage?: number;
 }
 
-/** そのラウンドで実際にプレイヤーが選んだ内容 */
-export interface PlayerSelection {
-  promptCardIds: string[];
-  supportCard?: SupportCardType;
+/** 防御側がそのターンに出す予想 */
+export interface DefenseSelection {
+  prediction: CardType;
 }
 
-export interface PlayerPublicInfo {
-  playerId: string;
-  name: string;
-}
-
-/** 1ラウンドにおける1プレイヤー分の判定結果 */
-export interface RoundOutcome {
-  playerId: string;
-  selection: PlayerSelection;
-  /** 相手の「破壊」で無効化されたプロンプトカードid（元のselectionには残る） */
-  voidedCardIds: string[];
-  overlearnChance: number;
-  roll: number;
-  busted: boolean;
-  score: number;
-  usedSupportBonus: boolean;
-}
-
-export interface RoundResult {
-  roundNumber: number;
-  outcomes: Record<string, RoundOutcome>;
-  /** 勝者なし＝両者暴走 or 同点で再戦 */
-  winnerId: string | null;
-  isReplay: boolean;
-  matchWins: Record<string, number>;
-}
-
-/**
- * クライアントへ配信する際の選択情報。
- * サポートカードの中身は「偵察」で確認しない限り非公開のため、
- * 使用有無（supportCardUsed）と中身（supportCard、非公開なら省略）を分けて持つ。
- */
-export interface PublicPlayerSelection {
-  promptCardIds: string[];
-  supportCardUsed: boolean;
-  supportCard?: SupportCardType;
-}
-
-export interface PublicRoundOutcome extends Omit<RoundOutcome, "selection"> {
-  selection: PublicPlayerSelection;
-}
-
-export interface PublicRoundResult extends Omit<RoundResult, "outcomes"> {
-  outcomes: Record<string, PublicRoundOutcome>;
+/** 1ターン（攻撃側の1手＋防御側の見破り判定）の結果 */
+export interface TurnResult {
+  turnNumber: number;
+  attackerId: string;
+  defenderId: string;
+  attack: AttackSelection;
+  defense: DefenseSelection;
+  /** 防御側が攻撃側のカードの種類を見破ったか */
+  wasCaught: boolean;
+  /** 防御側が受けたダメージ（見破っていた場合は0） */
+  damageDealt: number;
+  /** 見破られたことで攻撃側が受けた反動ダメージ（見破られていなければ0） */
+  selfDamage: number;
+  /** このターンでの攻撃側の妄想ゲージの増減 */
+  gaugeDelta: number;
+  /** 見破られた妄想カードの敗北抽選に外れて攻撃側が即敗北したか */
+  instantDefeat: boolean;
+  lifeTotals: Record<string, number>;
+  delusionGauges: Record<string, number>;
 }
 
 export interface GameOverResult {
-  winnerId: string;
-  matchWins: Record<string, number>;
-}
-
-export interface HandState {
-  remaining: Record<CardTier, number>;
+  /** 両者同時に敗北条件を満たした場合はnull（引き分け） */
+  winnerId: string | null;
+  lifeTotals: Record<string, number>;
+  delusionGauges: Record<string, number>;
 }

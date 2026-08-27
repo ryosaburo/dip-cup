@@ -1,13 +1,11 @@
 import { randomUUID } from "node:crypto";
 import {
-  buildInitialHand,
-  dealSupportOptions,
-  WINS_NEEDED,
-  type CardTier,
-  type PlayerSelection,
+  DELUSION_DAMAGE_MAX,
+  DELUSION_DAMAGE_MIN,
+  STARTING_LIFE,
+  type AttackSelection,
+  type DefenseSelection,
   type RoomPhase,
-  type RoundsOption,
-  type SupportCardType,
 } from "@battle/shared";
 
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 紛らわしい0/O/1/Iを除外
@@ -17,18 +15,18 @@ export interface ServerPlayer {
   socketId: string;
   name: string;
   userId?: string;
-  pendingSelection?: PlayerSelection;
-  /** そのラウンドでランダムに配られたサポートカードの選択肢（「使わない」以外） */
-  dealtSupportOptions: SupportCardType[];
 }
 
 export interface Room {
   roomCode: string;
-  roundsOption: RoundsOption;
-  winsNeeded: number;
-  roundNumber: number;
+  turnNumber: number;
   phase: RoomPhase;
-  matchWins: Record<string, number>;
+  /** 現在の攻撃側のplayerId */
+  attackerId: string;
+  /** 攻撃側が確定させた、防御側の判定待ちの攻撃内容 */
+  pendingAttack?: AttackSelection;
+  lifeTotals: Record<string, number>;
+  delusionGauges: Record<string, number>;
   players: ServerPlayer[];
 }
 
@@ -47,27 +45,21 @@ export class RoomManager {
     return code;
   }
 
-  createRoom(
-    rounds: RoundsOption,
-    hostSocketId: string,
-    hostName: string,
-    hostUserId?: string,
-  ): Room {
+  createRoom(hostSocketId: string, hostName: string, hostUserId?: string): Room {
     const roomCode = this.generateRoomCode();
     const host: ServerPlayer = {
       playerId: randomUUID(),
       socketId: hostSocketId,
       name: hostName,
       userId: hostUserId,
-      dealtSupportOptions: [],
     };
     const room: Room = {
       roomCode,
-      roundsOption: rounds,
-      winsNeeded: WINS_NEEDED[rounds],
-      roundNumber: 0,
+      turnNumber: 0,
       phase: "waiting",
-      matchWins: {},
+      attackerId: host.playerId,
+      lifeTotals: { [host.playerId]: STARTING_LIFE },
+      delusionGauges: { [host.playerId]: 0 },
       players: [host],
     };
     this.rooms.set(roomCode, room);
@@ -85,23 +77,16 @@ export class RoomManager {
       socketId,
       name,
       userId,
-      dealtSupportOptions: [],
     };
     room.players.push(guest);
-    room.matchWins[guest.playerId] = 0;
-    room.matchWins[room.players[0].playerId] = room.matchWins[room.players[0].playerId] ?? 0;
-    room.phase = "selecting";
-    room.roundNumber = 1;
-    this.dealSupportOptionsForRound(room);
+    room.lifeTotals[guest.playerId] = STARTING_LIFE;
+    room.delusionGauges[guest.playerId] = 0;
+    room.phase = "attacking";
+    room.turnNumber = 1;
+    // ホスト（先に部屋を作った側）が先攻
+    room.attackerId = room.players[0].playerId;
     this.socketToRoom.set(socketId, room.roomCode);
     return room;
-  }
-
-  /** そのラウンド用にサポートカードの選択肢をプレイヤーごとにランダムで配り直す */
-  dealSupportOptionsForRound(room: Room): void {
-    for (const player of room.players) {
-      player.dealtSupportOptions = dealSupportOptions();
-    }
   }
 
   getRoomBySocketId(socketId: string): Room | undefined {
@@ -110,27 +95,47 @@ export class RoomManager {
     return this.rooms.get(roomCode);
   }
 
-  submitSelection(socketId: string, selection: PlayerSelection): Room {
+  getDefender(room: Room): ServerPlayer {
+    return room.players.find((p) => p.playerId !== room.attackerId)!;
+  }
+
+  getAttacker(room: Room): ServerPlayer {
+    return room.players.find((p) => p.playerId === room.attackerId)!;
+  }
+
+  submitAttack(socketId: string, attack: AttackSelection): Room {
     const room = this.getRoomBySocketId(socketId);
     if (!room) throw new Error("ルームに参加していません");
     const player = room.players.find((p) => p.socketId === socketId);
     if (!player) throw new Error("プレイヤーが見つかりません");
+    if (player.playerId !== room.attackerId) throw new Error("あなたの攻撃ターンではありません");
+    if (room.pendingAttack) throw new Error("すでに攻撃を選択済みです");
 
-    validateSelection(selection, player.dealtSupportOptions);
-    player.pendingSelection = selection;
+    validateAttack(attack);
+    room.pendingAttack = attack;
+    room.phase = "defending";
     return room;
   }
 
-  bothSubmitted(room: Room): boolean {
-    return room.players.length === 2 && room.players.every((p) => p.pendingSelection);
+  submitDefense(socketId: string, defense: DefenseSelection): Room {
+    const room = this.getRoomBySocketId(socketId);
+    if (!room) throw new Error("ルームに参加していません");
+    const player = room.players.find((p) => p.socketId === socketId);
+    if (!player) throw new Error("プレイヤーが見つかりません");
+    if (player.playerId === room.attackerId) throw new Error("あなたの防御ターンではありません");
+    if (!room.pendingAttack) throw new Error("相手はまだ攻撃を選択していません");
+
+    validateDefense(defense);
+    return room;
   }
 
-  resetForNextRound(room: Room): void {
-    room.roundNumber += 1;
-    for (const player of room.players) {
-      player.pendingSelection = undefined;
-    }
-    this.dealSupportOptionsForRound(room);
+  /** ターン解決後、攻撃側と防御側を入れ替えて次のターンへ進める */
+  advanceTurn(room: Room): void {
+    const [a, b] = room.players;
+    room.attackerId = room.attackerId === a.playerId ? b.playerId : a.playerId;
+    room.pendingAttack = undefined;
+    room.turnNumber += 1;
+    room.phase = "attacking";
   }
 
   removeBySocketId(socketId: string): { room: Room; opponent?: ServerPlayer } | undefined {
@@ -145,20 +150,27 @@ export class RoomManager {
   }
 }
 
-function validateSelection(selection: PlayerSelection, dealtSupportOptions: SupportCardType[]): void {
-  const tierCounts: Record<CardTier, number> = { small: 0, medium: 0, large: 0 };
-  for (const id of selection.promptCardIds) {
-    const tier = id.split("-")[0] as CardTier;
-    if (!(tier in tierCounts)) throw new Error(`不正なカードid: ${id}`);
-    tierCounts[tier] += 1;
+function validateAttack(attack: AttackSelection): void {
+  if (attack.cardType !== "reality" && attack.cardType !== "delusion") {
+    throw new Error("不正なカード種別です");
   }
-  const limits = buildInitialHand();
-  for (const tier of Object.keys(tierCounts) as CardTier[]) {
-    if (tierCounts[tier] > limits[tier]) {
-      throw new Error(`${tier}カードの使用枚数が手札を超えています`);
+  if (attack.cardType === "delusion") {
+    const damage = attack.delusionDamage;
+    if (
+      typeof damage !== "number" ||
+      !Number.isInteger(damage) ||
+      damage < DELUSION_DAMAGE_MIN ||
+      damage > DELUSION_DAMAGE_MAX
+    ) {
+      throw new Error(
+        `妄想カードのダメージ量は${DELUSION_DAMAGE_MIN}〜${DELUSION_DAMAGE_MAX}の整数で指定してください`,
+      );
     }
   }
-  if (selection.supportCard && !dealtSupportOptions.includes(selection.supportCard)) {
-    throw new Error("不正なサポートカードです");
+}
+
+function validateDefense(defense: DefenseSelection): void {
+  if (defense.prediction !== "reality" && defense.prediction !== "delusion") {
+    throw new Error("不正な予想です");
   }
 }

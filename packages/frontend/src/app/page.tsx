@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { RoundsOption } from "@battle/shared";
 import { AuthPanel } from "@/components/AuthPanel";
 import { useAuth } from "@/context/AuthProvider";
 import { useGameSocket } from "@/context/GameSocketProvider";
-
-const ROUNDS_OPTIONS: RoundsOption[] = [1, 3, 5];
 
 export default function TopPage() {
   const router = useRouter();
@@ -15,7 +12,6 @@ export default function TopPage() {
   const { state, createRoom, joinRoom, clearError } = useGameSocket();
 
   const [playerNameInput, setPlayerNameInput] = useState("");
-  const [rounds, setRounds] = useState<RoundsOption>(3);
   const [joinCode, setJoinCode] = useState("");
 
   // ログイン中はプロフィールの表示名を初期値にする（未編集の間だけ）。編集済みなら入力値を優先。
@@ -33,7 +29,7 @@ export default function TopPage() {
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">AIエージェント学習対戦</h1>
           <p className="text-sm text-neutral-500">
-            プロンプトカードで学習スコアを競い、過学習には気をつけろ。
+            「現実」か「妄想」、相手の手を見破れ。見破られると効果は自分に跳ね返る。
           </p>
         </div>
 
@@ -61,22 +57,9 @@ export default function TopPage() {
 
         <section className="rounded-lg border p-4 space-y-3">
           <h2 className="font-semibold">ルームを作成する</h2>
-          <div className="flex gap-2">
-            {ROUNDS_OPTIONS.map((r) => (
-              <button
-                key={r}
-                onClick={() => setRounds(r)}
-                className={`flex-1 rounded-md border py-2 text-sm ${
-                  rounds === r ? "bg-black text-white" : "bg-white"
-                }`}
-              >
-                {r}本勝負
-              </button>
-            ))}
-          </div>
           <button
             disabled={!playerName.trim()}
-            onClick={() => createRoom(rounds, playerName.trim(), session?.access_token)}
+            onClick={() => createRoom(playerName.trim(), session?.access_token)}
             className="w-full rounded-md bg-black text-white py-2 disabled:opacity-40"
           >
             ルーム作成
