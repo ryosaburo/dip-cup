@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { evaluateMatchOutcome, resolveTurn } from "@battle/shared";
+import {
+  dealRealityCards,
+  evaluateMatchOutcome,
+  REALITY_CARD_IDS,
+  REALITY_HAND_SIZE,
+  resolveTurn,
+} from "@battle/shared";
 
 function rngSequence(values: number[]): () => number {
   let i = 0;
@@ -420,4 +426,22 @@ test("evaluateMatchOutcome: 両者同時に敗北条件を満たした場合は�
     gameOver: true,
     winnerId: null,
   });
+});
+
+test("dealRealityCards: REALITY_HAND_SIZE枚を重複なく、全て現実カードの中から配る", () => {
+  const hand = dealRealityCards(rngSequence([0.1, 0.5, 0.9]));
+
+  assert.equal(hand.length, REALITY_HAND_SIZE);
+  assert.equal(new Set(hand).size, REALITY_HAND_SIZE);
+  for (const card of hand) {
+    assert.ok(REALITY_CARD_IDS.includes(card));
+  }
+});
+
+test("dealRealityCards: 同じ乱数列なら同じ手札になる（決定的）", () => {
+  const rngValues = [0, 0.3, 0.7];
+  const handA = dealRealityCards(rngSequence(rngValues));
+  const handB = dealRealityCards(rngSequence(rngValues));
+
+  assert.deepEqual(handA, handB);
 });

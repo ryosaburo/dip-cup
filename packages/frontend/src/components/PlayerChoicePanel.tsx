@@ -6,7 +6,6 @@ import {
   DELUSION_DAMAGE_MIN,
   getAttackMagnitude,
   REALITY_CARD_CONFIG,
-  REALITY_CARD_IDS,
   type AttackSelection,
   type CardType,
   type DefenseSelection,
@@ -52,6 +51,7 @@ export function PlayerChoicePanel({
   life,
   gauge,
   phase,
+  dealtRealityCards,
   pendingDamage,
   onSubmitAttack,
   onSubmitDefense,
@@ -63,6 +63,8 @@ export function PlayerChoicePanel({
   life: number;
   gauge: number;
   phase: GamePhase;
+  /** ランダムに配られた、このターンに選べる現実カード */
+  dealtRealityCards: RealityCardId[];
   pendingDamage: number | null;
   onSubmitAttack: (attack: AttackSelection) => void;
   onSubmitDefense: (defense: DefenseSelection) => void;
@@ -135,11 +137,11 @@ export function PlayerChoicePanel({
 
         <div className="space-y-1.5">
           <p className="text-white/60 text-[0.65rem]">
-            あなたの攻撃ターンです。現実カードから1枚、または妄想カードを選んでください（見破られると効果は自分に跳ね返ります）
+            あなたの攻撃ターンです。ランダムに配られた現実カードから1枚、または妄想カードを選んでください（見破られると効果は自分に跳ね返ります）
           </p>
-          <p className="text-white/40 text-[0.6rem]">現実カード</p>
+          <p className="text-white/40 text-[0.6rem]">現実カード（今ターンだけ選べる3種）</p>
           <div className="grid grid-cols-3 gap-1.5">
-            {REALITY_CARD_IDS.map((id) => {
+            {dealtRealityCards.map((id) => {
               const config = REALITY_CARD_CONFIG[id];
               const previewDamage = getAttackMagnitude({ cardType: "reality", realityCardId: id }, gauge);
               const selected = choice?.cardType === "reality" && choice.realityCardId === id;

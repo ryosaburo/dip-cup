@@ -13,6 +13,7 @@ import type {
   AttackSelection,
   DefenseSelection,
   GameOverResult,
+  RealityCardId,
   TurnResult,
 } from "@battle/shared";
 import { getSocket } from "@/lib/socket";
@@ -37,12 +38,16 @@ interface GameState {
   opponentName: string | null;
   turnNumber: number;
   attackerId: string | null;
+  /** 現在の攻撃側にランダムで配られている現実カード（自分が攻撃側の時のみ意味を持つ） */
+  dealtRealityCards: RealityCardId[];
   /** 防御側が確認する、今ターンの攻撃の申告ダメージ量（種類は伏せられる） */
   pendingDamage: number | null;
   lifeTotals: Record<string, number>;
   delusionGauges: Record<string, number>;
   lastTurnResult: TurnResult | null;
   nextAttackerId: string | null;
+  /** 次の攻撃側に配られる現実カード（次のターンへ進むまでの一時保持） */
+  nextDealtRealityCards: RealityCardId[];
   nextTurnReady: boolean;
   gameOverResult: GameOverResult | null;
   errorMessage: string | null;
@@ -56,11 +61,13 @@ const initialState: GameState = {
   opponentName: null,
   turnNumber: 0,
   attackerId: null,
+  dealtRealityCards: [],
   pendingDamage: null,
   lifeTotals: {},
   delusionGauges: {},
   lastTurnResult: null,
   nextAttackerId: null,
+  nextDealtRealityCards: [],
   nextTurnReady: false,
   gameOverResult: null,
   errorMessage: null,
@@ -96,17 +103,19 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
 
     socket.on(
       "game_start",
-      ({ turnNumber, opponentName, lifeTotals, delusionGauges, attackerId }) => {
+      ({ turnNumber, opponentName, lifeTotals, delusionGauges, attackerId, dealtRealityCards }) => {
         setState((s) => ({
           ...s,
           turnNumber,
           lifeTotals,
           delusionGauges,
           attackerId,
+          dealtRealityCards,
           opponentName,
           pendingDamage: null,
           lastTurnResult: null,
           nextAttackerId: null,
+          nextDealtRealityCards: [],
           nextTurnReady: false,
           gameOverResult: null,
           phase: attackerId === s.playerId ? "my_attack" : "waiting_attack",
@@ -127,13 +136,14 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
       }));
     });
 
-    socket.on("turn_result", ({ result, nextAttackerId }) => {
+    socket.on("turn_result", ({ result, nextAttackerId, nextDealtRealityCards }) => {
       setState((s) => ({
         ...s,
         lastTurnResult: result,
         lifeTotals: result.lifeTotals,
         delusionGauges: result.delusionGauges,
         nextAttackerId,
+        nextDealtRealityCards,
         nextTurnReady: true,
         phase: "turn_result",
       }));
@@ -195,10 +205,12 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
       return {
         ...s,
         attackerId: s.nextAttackerId,
+        dealtRealityCards: s.nextDealtRealityCards,
         turnNumber: s.turnNumber + 1,
         pendingDamage: null,
         lastTurnResult: null,
         nextAttackerId: null,
+        nextDealtRealityCards: [],
         nextTurnReady: false,
         phase: s.nextAttackerId === s.playerId ? "my_attack" : "waiting_attack",
       };

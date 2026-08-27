@@ -9,6 +9,8 @@ import {
   OVERLOAD_STRIKE_GAUGE_THRESHOLD,
   OVERLOAD_STRIKE_MULTIPLIER,
   QUICK_STRIKE_DAMAGE,
+  REALITY_CARD_IDS,
+  REALITY_HAND_SIZE,
   RECKLESS_RECOVERY_GAUGE_AMOUNT,
   RECKLESS_RECOVERY_LIFE_AMOUNT,
   RESTFUL_RECOVERY_AMOUNT,
@@ -18,7 +20,22 @@ import {
   STEADY_STRIKE_DAMAGE,
   STEADY_STRIKE_GAUGE_DECREASE,
 } from "./gameConfig.js";
-import type { AttackSelection, DefenseSelection, LingeringWound, TurnResult } from "./types.js";
+import type { AttackSelection, DefenseSelection, LingeringWound, RealityCardId, TurnResult } from "./types.js";
+
+/**
+ * 現実カード11種類の中から、そのターンに選べる分（`REALITY_HAND_SIZE`枚）をランダムに配る。
+ * rngは0以上1未満の乱数を返す関数（テスト時に固定値を注入できるようにするため）。
+ */
+export function dealRealityCards(rng: () => number = Math.random): RealityCardId[] {
+  const pool = [...REALITY_CARD_IDS];
+  const hand: RealityCardId[] = [];
+  for (let i = 0; i < REALITY_HAND_SIZE && pool.length > 0; i++) {
+    const index = Math.floor(rng() * pool.length);
+    hand.push(pool[index]);
+    pool.splice(index, 1);
+  }
+  return hand;
+}
 
 function clampPercent(value: number): number {
   return Math.min(100, Math.max(0, value));
