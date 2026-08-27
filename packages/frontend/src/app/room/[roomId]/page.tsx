@@ -1,21 +1,26 @@
 "use client";
 
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useGameSocket } from "@/context/GameSocketProvider";
 import { GameField } from "@/components/GameField";
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
-  const { state, submitAttack, submitDefense, proceedToNextTurn } = useGameSocket();
+  const router = useRouter();
+  const { state, submitAttack, submitDefense, proceedToNextTurn, leaveRoom } = useGameSocket();
+
+  const backToTop = () => {
+    leaveRoom();
+    router.push("/");
+  };
 
   if (state.phase === "idle") {
     return (
       <Centered>
         <p>ルーム「{roomId}」の情報が見つかりません。トップからやり直してください。</p>
-        <Link href="/" className="underline">
+        <button onClick={backToTop} className="underline">
           トップへ戻る
-        </Link>
+        </button>
       </Centered>
     );
   }
@@ -24,9 +29,9 @@ export default function RoomPage() {
     return (
       <Centered>
         <p>相手が退室しました。対戦を終了します。</p>
-        <Link href="/" className="underline">
+        <button onClick={backToTop} className="underline">
           トップへ戻る
-        </Link>
+        </button>
       </Centered>
     );
   }
@@ -66,9 +71,9 @@ export default function RoomPage() {
             ([id]) => id !== state.playerId,
           )?.[1] ?? 0}
         </p>
-        <Link href="/" className="underline">
+        <button onClick={backToTop} className="underline">
           トップへ戻る
-        </Link>
+        </button>
       </Centered>
     );
   }

@@ -84,6 +84,7 @@ interface GameSocketContextValue {
   submitDefense: (defense: DefenseSelection) => void;
   proceedToNextTurn: () => void;
   clearError: () => void;
+  leaveRoom: () => void;
 }
 
 const GameSocketContext = createContext<GameSocketContextValue | null>(null);
@@ -235,6 +236,11 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, errorMessage: null }));
   }, []);
 
+  const leaveRoom = useCallback(() => {
+    socketRef.current.emit("leave_room");
+    setState(initialState);
+  }, []);
+
   return (
     <GameSocketContext.Provider
       value={{
@@ -245,6 +251,7 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
         submitDefense,
         proceedToNextTurn,
         clearError,
+        leaveRoom,
       }}
     >
       {children}
