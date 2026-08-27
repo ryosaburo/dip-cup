@@ -10,21 +10,22 @@ import {
   type ReactNode,
 } from "react";
 import type {
+  AttackSelection,
+  DefenseSelection,
   GameOverResult,
-  PlayerSelection,
-  PublicRoundResult,
-  RoundsOption,
-  SupportCardType,
+  TurnResult,
 } from "@battle/shared";
-import type { HandPublicState } from "@battle/shared";
 import { getSocket } from "@/lib/socket";
 
 export type GamePhase =
   | "idle"
   | "waiting_for_opponent"
-  | "selecting"
+  | "my_attack"
+  | "waiting_attack"
+  | "my_defense"
+  | "waiting_defense"
   | "waiting_for_result"
-  | "round_result"
+  | "turn_result"
   | "gameover"
   | "opponent_left";
 
@@ -34,14 +35,15 @@ interface GameState {
   playerId: string | null;
   playerName: string | null;
   opponentName: string | null;
-  roundsTarget: RoundsOption | null;
-  winsNeeded: number;
-  roundNumber: number;
-  hand: HandPublicState | null;
-  supportOptions: SupportCardType[];
-  matchWins: Record<string, number>;
-  lastRoundResult: PublicRoundResult | null;
-  nextRoundReady: boolean;
+  turnNumber: number;
+  attackerId: string | null;
+  /** 防御側が確認する、今ターンの攻撃の申告ダメージ量（種類は伏せられる） */
+  pendingDamage: number | null;
+  lifeTotals: Record<string, number>;
+  delusionGauges: Record<string, number>;
+  lastTurnResult: TurnResult | null;
+  nextAttackerId: string | null;
+  nextTurnReady: boolean;
   gameOverResult: GameOverResult | null;
   errorMessage: string | null;
 }
@@ -52,24 +54,25 @@ const initialState: GameState = {
   playerId: null,
   playerName: null,
   opponentName: null,
-  roundsTarget: null,
-  winsNeeded: 0,
-  roundNumber: 0,
-  hand: null,
-  supportOptions: [],
-  matchWins: {},
-  lastRoundResult: null,
-  nextRoundReady: false,
+  turnNumber: 0,
+  attackerId: null,
+  pendingDamage: null,
+  lifeTotals: {},
+  delusionGauges: {},
+  lastTurnResult: null,
+  nextAttackerId: null,
+  nextTurnReady: false,
   gameOverResult: null,
   errorMessage: null,
 };
 
 interface GameSocketContextValue {
   state: GameState;
-  createRoom: (rounds: RoundsOption, playerName: string, accessToken?: string) => void;
+  createRoom: (playerName: string, accessToken?: string) => void;
   joinRoom: (roomCode: string, playerName: string, accessToken?: string) => void;
-  submitSelection: (selection: PlayerSelection) => void;
-  proceedToNextRound: () => void;
+  submitAttack: (attack: AttackSelection) => void;
+  submitDefense: (defense: DefenseSelection) => void;
+  proceedToNextTurn: () => void;
   clearError: () => void;
 }
 
@@ -93,50 +96,50 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
 
     socket.on(
       "game_start",
-      ({ roundsTarget, winsNeeded, roundNumber, hand, opponentName, supportOptions }) => {
+      ({ turnNumber, opponentName, lifeTotals, delusionGauges, attackerId }) => {
         setState((s) => ({
           ...s,
-          roundsTarget,
-          winsNeeded,
-          roundNumber,
-          hand,
-          supportOptions,
+          turnNumber,
+          lifeTotals,
+          delusionGauges,
+          attackerId,
           opponentName,
-          matchWins: {},
-          lastRoundResult: null,
+          pendingDamage: null,
+          lastTurnResult: null,
+          nextAttackerId: null,
+          nextTurnReady: false,
           gameOverResult: null,
-          nextRoundReady: false,
-          phase: "selecting",
+          phase: attackerId === s.playerId ? "my_attack" : "waiting_attack",
         }));
       },
     );
 
-    socket.on("round_result", ({ result, yourHand }) => {
+    socket.on("attack_submitted", ({ damage }) => {
       setState((s) => ({
         ...s,
-        lastRoundResult: result,
-        matchWins: result.matchWins,
-        hand: yourHand,
-        phase: "round_result",
+        pendingDamage: damage,
+        phase: s.attackerId === s.playerId ? "waiting_defense" : "my_defense",
       }));
     });
 
-    socket.on("phase_changed", ({ phase, supportOptions }) => {
-      if (phase === "selecting") {
-        setState((s) => ({
-          ...s,
-          nextRoundReady: true,
-          roundNumber: s.roundNumber + 1,
-          supportOptions,
-        }));
-      }
-    });
-
-    socket.on("game_over", ({ winnerId, matchWins }) => {
+    socket.on("turn_result", ({ result, nextAttackerId }) => {
       setState((s) => ({
         ...s,
-        gameOverResult: { winnerId, matchWins },
-        matchWins,
+        lastTurnResult: result,
+        lifeTotals: result.lifeTotals,
+        delusionGauges: result.delusionGauges,
+        nextAttackerId,
+        nextTurnReady: true,
+        phase: "turn_result",
+      }));
+    });
+
+    socket.on("game_over", ({ winnerId, lifeTotals, delusionGauges }) => {
+      setState((s) => ({
+        ...s,
+        gameOverResult: { winnerId, lifeTotals, delusionGauges },
+        lifeTotals,
+        delusionGauges,
         phase: "gameover",
       }));
     });
@@ -155,13 +158,10 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const createRoom = useCallback(
-    (rounds: RoundsOption, playerName: string, accessToken?: string) => {
-      setState((s) => ({ ...s, playerName }));
-      socketRef.current.emit("create_room", { rounds, playerName, accessToken });
-    },
-    [],
-  );
+  const createRoom = useCallback((playerName: string, accessToken?: string) => {
+    setState((s) => ({ ...s, playerName }));
+    socketRef.current.emit("create_room", { playerName, accessToken });
+  }, []);
 
   const joinRoom = useCallback(
     (roomCode: string, playerName: string, accessToken?: string) => {
@@ -175,18 +175,29 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const submitSelection = useCallback((selection: PlayerSelection) => {
-    setState((s) => ({ ...s, phase: "waiting_for_result" }));
-    socketRef.current.emit("select_cards", selection);
+  const submitAttack = useCallback((attack: AttackSelection) => {
+    socketRef.current.emit("submit_attack", attack);
   }, []);
 
-  const proceedToNextRound = useCallback(() => {
-    setState((s) => ({
-      ...s,
-      phase: "selecting",
-      lastRoundResult: null,
-      nextRoundReady: false,
-    }));
+  const submitDefense = useCallback((defense: DefenseSelection) => {
+    setState((s) => ({ ...s, phase: "waiting_for_result" }));
+    socketRef.current.emit("submit_defense", defense);
+  }, []);
+
+  const proceedToNextTurn = useCallback(() => {
+    setState((s) => {
+      if (!s.nextAttackerId) return s;
+      return {
+        ...s,
+        attackerId: s.nextAttackerId,
+        turnNumber: s.turnNumber + 1,
+        pendingDamage: null,
+        lastTurnResult: null,
+        nextAttackerId: null,
+        nextTurnReady: false,
+        phase: s.nextAttackerId === s.playerId ? "my_attack" : "waiting_attack",
+      };
+    });
   }, []);
 
   const clearError = useCallback(() => {
@@ -195,7 +206,15 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
 
   return (
     <GameSocketContext.Provider
-      value={{ state, createRoom, joinRoom, submitSelection, proceedToNextRound, clearError }}
+      value={{
+        state,
+        createRoom,
+        joinRoom,
+        submitAttack,
+        submitDefense,
+        proceedToNextTurn,
+        clearError,
+      }}
     >
       {children}
     </GameSocketContext.Provider>

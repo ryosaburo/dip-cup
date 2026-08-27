@@ -1,10 +1,10 @@
 import type { Server, Socket } from "socket.io";
 import {
-  getMatchWinner,
-  resolveRound,
-  toPublicRoundResult,
-  buildInitialHand,
+  evaluateMatchOutcome,
+  getAttackDamage,
+  resolveTurn,
   type ClientToServerEvents,
+  type DefenseSelection,
   type ServerToClientEvents,
 } from "@battle/shared";
 import { RoomManager, type Room } from "../rooms/RoomManager.js";
@@ -15,10 +15,10 @@ type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
 export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
   io.on("connection", (socket: TypedSocket) => {
-    socket.on("create_room", async ({ rounds, playerName, accessToken }) => {
+    socket.on("create_room", async ({ playerName, accessToken }) => {
       try {
         const userId = await verifyAccessToken(accessToken);
-        const room = roomManager.createRoom(rounds, socket.id, playerName, userId);
+        const room = roomManager.createRoom(socket.id, playerName, userId);
         socket.join(room.roomCode);
         socket.emit("room_created", {
           roomCode: room.roomCode,
@@ -47,12 +47,11 @@ export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
         for (const player of room.players) {
           const opponent = room.players.find((p) => p.playerId !== player.playerId)!;
           io.to(player.socketId).emit("game_start", {
-            roundsTarget: room.roundsOption,
-            winsNeeded: room.winsNeeded,
-            roundNumber: room.roundNumber,
-            hand: { remaining: buildInitialHand() },
+            turnNumber: room.turnNumber,
             opponentName: opponent.name,
-            supportOptions: player.dealtSupportOptions,
+            lifeTotals: room.lifeTotals,
+            delusionGauges: room.delusionGauges,
+            attackerId: room.attackerId,
           });
         }
       } catch (err) {
@@ -60,12 +59,19 @@ export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
       }
     });
 
-    socket.on("select_cards", (selection) => {
+    socket.on("submit_attack", (attack) => {
       try {
-        const room = roomManager.submitSelection(socket.id, selection);
-        if (!roomManager.bothSubmitted(room)) return;
+        const room = roomManager.submitAttack(socket.id, attack);
+        io.to(room.roomCode).emit("attack_submitted", { damage: getAttackDamage(attack) });
+      } catch (err) {
+        socket.emit("error", { message: (err as Error).message });
+      }
+    });
 
-        resolveAndBroadcastRound(io, roomManager, room);
+    socket.on("submit_defense", (defense) => {
+      try {
+        const room = roomManager.submitDefense(socket.id, defense);
+        resolveAndBroadcastTurn(io, roomManager, room, defense);
       } catch (err) {
         socket.emit("error", { message: (err as Error).message });
       }
@@ -76,63 +82,63 @@ export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
   });
 }
 
-function resolveAndBroadcastRound(io: TypedServer, roomManager: RoomManager, room: Room) {
-  const [playerA, playerB] = room.players;
+function resolveAndBroadcastTurn(
+  io: TypedServer,
+  roomManager: RoomManager,
+  room: Room,
+  defense: DefenseSelection,
+) {
+  const attacker = roomManager.getAttacker(room);
+  const defender = roomManager.getDefender(room);
 
-  const result = resolveRound({
-    roundNumber: room.roundNumber,
-    playerA: { playerId: playerA.playerId, selection: playerA.pendingSelection! },
-    playerB: { playerId: playerB.playerId, selection: playerB.pendingSelection! },
-    matchWins: room.matchWins,
+  const result = resolveTurn({
+    turnNumber: room.turnNumber,
+    attackerId: attacker.playerId,
+    defenderId: defender.playerId,
+    attack: room.pendingAttack!,
+    defense,
+    lifeTotals: room.lifeTotals,
+    delusionGauges: room.delusionGauges,
   });
 
-  room.matchWins = result.matchWins;
+  room.lifeTotals = result.lifeTotals;
+  room.delusionGauges = result.delusionGauges;
 
-  const winnerId = getMatchWinner(room.matchWins, room.winsNeeded);
-  const hand = { remaining: buildInitialHand() };
+  const { gameOver, winnerId } = evaluateMatchOutcome(room.lifeTotals, room.delusionGauges);
 
-  for (const player of room.players) {
-    io.to(player.socketId).emit("round_result", {
-      result: toPublicRoundResult(result, player.playerId),
-      yourHand: hand,
-    });
-  }
-
-  if (winnerId) {
+  if (gameOver) {
     room.phase = "gameover";
-    io.to(room.roomCode).emit("game_over", { winnerId, matchWins: room.matchWins });
+    io.to(room.roomCode).emit("turn_result", { result, nextAttackerId: room.attackerId });
+    io.to(room.roomCode).emit("game_over", {
+      winnerId,
+      lifeTotals: room.lifeTotals,
+      delusionGauges: room.delusionGauges,
+    });
     void saveMatchHistory(room, winnerId);
     return;
   }
 
-  roomManager.resetForNextRound(room);
-  room.phase = "selecting";
-  for (const player of room.players) {
-    io.to(player.socketId).emit("phase_changed", {
-      phase: "selecting",
-      supportOptions: player.dealtSupportOptions,
-    });
-  }
+  roomManager.advanceTurn(room);
+  io.to(room.roomCode).emit("turn_result", { result, nextAttackerId: room.attackerId });
 }
 
 /** ログイン済みプレイヤーが1人以上いる試合のみ対戦履歴を保存する */
-async function saveMatchHistory(room: Room, winnerId: string) {
+async function saveMatchHistory(room: Room, winnerId: string | null) {
   if (!supabaseAdmin) return;
 
   const [player1, player2] = room.players;
   if (!player1.userId && !player2.userId) return;
 
-  const winner = room.players.find((p) => p.playerId === winnerId);
+  const winner = winnerId ? room.players.find((p) => p.playerId === winnerId) : undefined;
 
   const { error } = await supabaseAdmin.from("match_history").insert({
     room_code: room.roomCode,
-    rounds_option: room.roundsOption,
     player1_user_id: player1.userId ?? null,
     player1_name: player1.name,
-    player1_wins: room.matchWins[player1.playerId] ?? 0,
+    player1_final_life: room.lifeTotals[player1.playerId] ?? 0,
     player2_user_id: player2.userId ?? null,
     player2_name: player2.name,
-    player2_wins: room.matchWins[player2.playerId] ?? 0,
+    player2_final_life: room.lifeTotals[player2.playerId] ?? 0,
     winner_user_id: winner?.userId ?? null,
   });
 

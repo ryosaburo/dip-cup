@@ -1,29 +1,18 @@
-import type {
-  PlayerSelection,
-  PublicRoundResult,
-  RoomPhase,
-  RoundsOption,
-  SupportCardType,
-} from "./types.js";
+import type { AttackSelection, DefenseSelection, TurnResult } from "./types.js";
 
 /** Client -> Server */
 export interface ClientToServerEvents {
-  create_room: (payload: {
-    rounds: RoundsOption;
-    playerName: string;
-    accessToken?: string;
-  }) => void;
+  create_room: (payload: { playerName: string; accessToken?: string }) => void;
   join_room: (payload: {
     roomCode: string;
     playerName: string;
     accessToken?: string;
   }) => void;
-  select_cards: (payload: PlayerSelection) => void;
+  /** 自分の攻撃ターンにカードを出す */
+  submit_attack: (payload: AttackSelection) => void;
+  /** 自分の防御ターンに予想を出す */
+  submit_defense: (payload: DefenseSelection) => void;
   leave_room: () => void;
-}
-
-export interface HandPublicState {
-  remaining: Record<"small" | "medium" | "large", number>;
 }
 
 /** Server -> Client */
@@ -36,18 +25,20 @@ export interface ServerToClientEvents {
   }) => void;
   error: (payload: { message: string }) => void;
   game_start: (payload: {
-    roundsTarget: RoundsOption;
-    winsNeeded: number;
-    roundNumber: number;
-    hand: HandPublicState;
+    turnNumber: number;
     opponentName: string;
-    supportOptions: SupportCardType[];
+    lifeTotals: Record<string, number>;
+    delusionGauges: Record<string, number>;
+    /** 最初の攻撃側のplayerId */
+    attackerId: string;
   }) => void;
-  phase_changed: (payload: { phase: RoomPhase; supportOptions: SupportCardType[] }) => void;
-  round_result: (payload: {
-    result: PublicRoundResult;
-    yourHand: HandPublicState;
+  /** 攻撃側が攻撃を確定した合図。防御側はこのダメージ量を見てから予想する（カード種別は伏せる） */
+  attack_submitted: (payload: { damage: number }) => void;
+  turn_result: (payload: { result: TurnResult; nextAttackerId: string }) => void;
+  game_over: (payload: {
+    winnerId: string | null;
+    lifeTotals: Record<string, number>;
+    delusionGauges: Record<string, number>;
   }) => void;
-  game_over: (payload: { winnerId: string; matchWins: Record<string, number> }) => void;
   opponent_left: () => void;
 }

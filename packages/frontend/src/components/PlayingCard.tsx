@@ -1,6 +1,6 @@
 "use client";
 
-import type { CardTier, SupportCardType } from "@battle/shared";
+import { STARTING_LIFE, type CardType } from "@battle/shared";
 
 export type CardSize = "sm" | "md" | "lg" | "custom";
 
@@ -11,32 +11,35 @@ const SIZE_CLASS: Record<CardSize, string> = {
   custom: "", // custom指定時は customClass を優先
 };
 
-const TIER_LABEL: Record<CardTier, string> = { small: "小", medium: "中", large: "大" };
-const TIER_ICON: Record<CardTier, string> = { small: "🌱", medium: "⚙️", large: "🔥" };
-const TIER_GRADIENT: Record<CardTier, string> = {
-  small: "from-emerald-400 to-emerald-600",
-  medium: "from-amber-400 to-amber-600",
-  large: "from-rose-500 to-red-700",
-};
+/** 現在ライフ / 開始時ライフ の割合バー */
+export function LifeBar({ life, className = "" }: { life: number; className?: string }) {
+  const ratio = Math.max(0, Math.min(1, life / STARTING_LIFE));
+  return (
+    <div className={`h-1.5 w-full rounded-full bg-white/10 overflow-hidden ${className}`}>
+      <div
+        className={`h-full rounded-full transition-all duration-500 ${
+          ratio > 0.5 ? "bg-emerald-400" : ratio > 0.2 ? "bg-amber-400" : "bg-red-500"
+        }`}
+        style={{ width: `${ratio * 100}%` }}
+      />
+    </div>
+  );
+}
 
-const SUPPORT_ICON: Record<SupportCardType, string> = {
-  mitigate: "🛡️",
-  sabotage: "⚡",
-  boost: "🚀",
-  randomBoost: "🎲",
-  removeCard: "💥",
-  curse: "☠️",
-  peek: "🔍",
-};
-const SUPPORT_GRADIENT: Record<SupportCardType, string> = {
-  mitigate: "from-sky-400 to-sky-600",
-  sabotage: "from-fuchsia-500 to-purple-700",
-  boost: "from-yellow-300 to-orange-500",
-  randomBoost: "from-lime-400 to-green-600",
-  removeCard: "from-red-500 to-rose-700",
-  curse: "from-violet-600 to-indigo-900",
-  peek: "from-cyan-400 to-teal-600",
-};
+/** 妄想ゲージ（0〜100%、高いほど危険） */
+export function GaugeBar({ gauge, className = "" }: { gauge: number; className?: string }) {
+  const ratio = Math.max(0, Math.min(1, gauge / 100));
+  return (
+    <div className={`h-1.5 w-full rounded-full bg-white/10 overflow-hidden ${className}`}>
+      <div
+        className={`h-full rounded-full transition-all duration-500 ${
+          ratio < 0.5 ? "bg-violet-400" : ratio < 0.8 ? "bg-fuchsia-500" : "bg-red-500"
+        }`}
+        style={{ width: `${ratio * 100}%` }}
+      />
+    </div>
+  );
+}
 
 /** カードの基本クラスを生成するヘルパー関数 */
 function getCardSizeClass(size: CardSize, customClass?: string): string {
@@ -72,38 +75,23 @@ export function CardBack({
   );
 }
 
-export function PromptCardFace({
-  tier,
-  size = "md",
-  customClass = "",
-  className = "",
-}: {
-  tier: CardTier;
-  size?: CardSize;
-  customClass?: string;
-  className?: string;
-}) {
-  const sizeClass = getCardSizeClass(size, customClass);
+const CARD_TYPE_LABEL: Record<CardType, string> = { reality: "現実", delusion: "妄想" };
+const CARD_TYPE_ICON: Record<CardType, string> = { reality: "🪨", delusion: "🌀" };
+const CARD_TYPE_GRADIENT: Record<CardType, string> = {
+  reality: "from-sky-400 to-slate-600",
+  delusion: "from-fuchsia-500 to-purple-800",
+};
 
-  return (
-    <div
-      className={`${sizeClass} rounded-lg border-2 border-white shadow-md bg-gradient-to-br ${TIER_GRADIENT[tier]} text-white flex flex-col items-center justify-center gap-0.5 select-none ${className}`}
-    >
-      <span className="text-[1.4em] leading-none">{TIER_ICON[tier]}</span>
-      <span className="font-bold text-[0.85em] leading-none">{TIER_LABEL[tier]}</span>
-    </div>
-  );
-}
-
-export function SupportCardFace({
+export function CardTypeFace({
   type,
-  label,
+  damage,
   size = "md",
   customClass = "",
   className = "",
 }: {
-  type: SupportCardType;
-  label: string;
+  type: CardType;
+  /** 妄想カードのみ、申告ダメージ量を表示する */
+  damage?: number;
   size?: CardSize;
   customClass?: string;
   className?: string;
@@ -112,10 +100,13 @@ export function SupportCardFace({
 
   return (
     <div
-      className={`${sizeClass} rounded-lg border-2 border-white shadow-md bg-gradient-to-br ${SUPPORT_GRADIENT[type]} text-white flex flex-col items-center justify-center gap-0.5 text-center px-1 select-none ${className}`}
+  className={`${sizeClass} rounded-lg border-2 border-white shadow-md bg-gradient-to-br ${CARD_TYPE_GRADIENT[type]} text-white flex flex-col items-center justify-center gap-0.5 text-center px-1 select-none ${className}`}
     >
-      <span className="text-[1.2em] leading-none">{SUPPORT_ICON[type]}</span>
-      <span className="font-bold text-[0.65em] leading-tight">{label}</span>
+      <span className="text-[1.3em] leading-none">{CARD_TYPE_ICON[type]}</span>
+      <span className="font-bold text-[0.8em] leading-none">{CARD_TYPE_LABEL[type]}</span>
+      {damage !== undefined && (
+        <span className="text-[0.65em] leading-none opacity-90">{damage}</span>
+      )}
     </div>
   );
 }
@@ -142,16 +133,18 @@ export function EmptyCardSlot({
   );
 }
 
-/** Prompt card that flips from a hidden back to its revealed face */
-export function RevealPromptCard({
-  tier,
+/** 現実/妄想カードが伏せ状態から表向きに反転するアニメーション */
+export function RevealCard({
+  type,
+  damage,
   size = "md",
   customClass = "",
   revealed,
   delayMs = 0,
   className = "",
 }: {
-  tier: CardTier;
+  type: CardType;
+  damage?: number;
   size?: CardSize;
   customClass?: string;
   revealed: boolean;
@@ -170,7 +163,12 @@ export function RevealPromptCard({
           <CardBack size={size} customClass={customClass} />
         </div>
         <div className="card-3d-face card-3d-face-back">
-          <PromptCardFace tier={tier} size={size} customClass={customClass} />
+          <CardTypeFace
+            type={type}
+            damage={damage}
+            size={size}
+            customClass={customClass}
+          />
         </div>
       </div>
     </div>
