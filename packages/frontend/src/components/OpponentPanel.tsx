@@ -53,6 +53,7 @@ export function OpponentPanel({
                 outcome.damageDealt ||
                 outcome.selfDamage ||
                 outcome.selfHeal ||
+                outcome.defenderHeal ||
                 Math.abs(outcome.gaugeDelta) ||
                 undefined
               }

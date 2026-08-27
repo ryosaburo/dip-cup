@@ -9,7 +9,7 @@ import type { RealityCardId } from "./types.js";
 /** 対戦開始時の各プレイヤーのライフ */
 export const STARTING_LIFE = 100;
 
-/** 妄想カードで申告できるダメージ量の範囲（見破られなければこの値がそのまま通る） */
+/** 妄想カードで申告できる量（ダメージ量または回復量）の範囲（見破られなければこの値がそのまま通る） */
 export const DELUSION_DAMAGE_MIN = 10;
 export const DELUSION_DAMAGE_MAX = 60;
 
@@ -53,7 +53,7 @@ export const REALITY_CARD_CONFIG: Record<RealityCardId, { label: string; descrip
   minor_strike: { label: "小さな一撃", description: "相手に10ダメージ" },
   restful_recovery: {
     label: "休息",
-    description: "自分のライフを30回復する（見破られると回復ではなく30の自傷ダメージになる）",
+    description: "自分のライフを30回復する（見破られると自分は回復できず、見破った相手が30回復する）",
   },
   meditation: {
     label: "瞑想",
@@ -62,12 +62,12 @@ export const REALITY_CARD_CONFIG: Record<RealityCardId, { label: string; descrip
   reckless_recovery: {
     label: "無理な回復",
     description:
-      "自分のライフを20回復する（見破られると回復ではなく20の自傷ダメージになる）。見破られたかに関わらず、自分の妄想ゲージは常に20%上がる",
+      "自分のライフを20回復する（見破られると自分は回復できず、見破った相手が20回復する）。見破られたかに関わらず、自分の妄想ゲージは常に20%上がる",
   },
   slow_recovery: {
     label: "緩やかな回復",
     description:
-      "以後3ターン、ターン終了時ごとに自分のライフが10回復する（見破られると回復ではなく、以後3ターン10ずつ自分にダメージが入り続ける）",
+      "以後3ターン、ターン終了時ごとに自分のライフが10回復する（見破られると自分は回復できず、以後3ターン見破った相手のライフが10ずつ回復する）",
   },
 };
 
