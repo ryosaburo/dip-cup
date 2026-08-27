@@ -6,6 +6,7 @@ import {
   type AttackSelection,
   type CardType,
   type DefenseSelection,
+  type RealityCardId,
   type TurnResult,
 } from "@battle/shared";
 import type { GamePhase } from "@/context/GameSocketProvider";
@@ -76,6 +77,7 @@ export function GameField({
   delusionGauges,
   turnNumber,
   phase,
+  dealtRealityCards,
   pendingDamage,
   onSubmitAttack,
   onSubmitDefense,
@@ -90,6 +92,8 @@ export function GameField({
   delusionGauges: Record<string, number>;
   turnNumber: number;
   phase: Exclude<GamePhase, "idle" | "waiting_for_opponent" | "gameover" | "opponent_left">;
+  /** 自分が攻撃側の時に選べる、ランダムに配られた現実カード */
+  dealtRealityCards: RealityCardId[];
   pendingDamage: number | null;
   onSubmitAttack: (attack: AttackSelection) => void;
   onSubmitDefense: (defense: DefenseSelection) => void;
@@ -162,6 +166,7 @@ export function GameField({
               life={yourLife}
               gauge={yourGauge}
               phase={phase}
+              dealtRealityCards={dealtRealityCards}
               pendingDamage={pendingDamage}
               onSubmitAttack={onSubmitAttack}
               onSubmitDefense={onSubmitDefense}

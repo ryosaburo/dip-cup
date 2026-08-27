@@ -86,6 +86,7 @@ export default function RoomPage() {
           delusionGauges={state.delusionGauges}
           turnNumber={state.turnNumber}
           phase={state.phase}
+          dealtRealityCards={state.dealtRealityCards}
           pendingDamage={state.pendingDamage}
           onSubmitAttack={submitAttack}
           onSubmitDefense={submitDefense}

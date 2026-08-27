@@ -1,4 +1,4 @@
-import type { AttackSelection, DefenseSelection, TurnResult } from "./types.js";
+import type { AttackSelection, DefenseSelection, RealityCardId, TurnResult } from "./types.js";
 
 /** Client -> Server */
 export interface ClientToServerEvents {
@@ -31,10 +31,17 @@ export interface ServerToClientEvents {
     delusionGauges: Record<string, number>;
     /** 最初の攻撃側のplayerId */
     attackerId: string;
+    /** 最初の攻撃側にランダムで配られた現実カード（この中から1枚を選ぶ） */
+    dealtRealityCards: RealityCardId[];
   }) => void;
   /** 攻撃側が攻撃を確定した合図。防御側はこのダメージ量を見てから予想する（カード種別は伏せる） */
   attack_submitted: (payload: { damage: number; attackerId: string; turnNumber: number }) => void;
-  turn_result: (payload: { result: TurnResult; nextAttackerId: string }) => void;
+  turn_result: (payload: {
+    result: TurnResult;
+    nextAttackerId: string;
+    /** 次の攻撃側にランダムで配られた現実カード（この中から1枚を選ぶ） */
+    nextDealtRealityCards: RealityCardId[];
+  }) => void;
   game_over: (payload: {
     winnerId: string | null;
     lifeTotals: Record<string, number>;
