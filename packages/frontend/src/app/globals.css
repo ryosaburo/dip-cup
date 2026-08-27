@@ -154,6 +154,121 @@ body {
   animation: banner-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* --- 見破り結果の演出：現実＝どんより重く沈む --- */
+
+@keyframes reveal-reality-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) translateY(-8px);
+    filter: grayscale(0.6) brightness(0.65);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04) translateY(3px);
+    filter: grayscale(0.5) brightness(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: grayscale(0.45) brightness(0.9);
+  }
+}
+
+.reveal-image-reality {
+  animation: reveal-reality-pop 0.7s cubic-bezier(0.36, 0, 0.66, -0.02) both;
+  filter: grayscale(0.45) brightness(0.9) contrast(1.05) drop-shadow(0 10px 16px rgba(0, 0, 0, 0.6));
+}
+
+@keyframes reveal-reality-aura {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
+}
+
+.reveal-reality-aura {
+  position: absolute;
+  inset: -35%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(40, 40, 48, 0.6) 0%, rgba(20, 20, 25, 0) 70%);
+  animation: reveal-reality-aura 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* --- 見破り結果の演出：妄想＝メルヘンチックに華やか --- */
+
+@keyframes reveal-delusion-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-10deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.18) rotate(5deg);
+  }
+  75% {
+    transform: scale(0.95) rotate(-3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.reveal-image-delusion {
+  animation: reveal-delusion-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  filter: saturate(1.4) brightness(1.05) drop-shadow(0 0 18px rgba(236, 72, 153, 0.65));
+}
+
+@keyframes reveal-delusion-aura {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.15) rotate(8deg);
+  }
+}
+
+.reveal-delusion-aura {
+  position: absolute;
+  inset: -40%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(244, 114, 182, 0.55) 0%,
+    rgba(168, 85, 247, 0.35) 45%,
+    rgba(168, 85, 247, 0) 75%
+  );
+  animation: reveal-delusion-aura 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes reveal-sparkle-float {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.5);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(1.15);
+  }
+}
+
+.reveal-sparkle {
+  animation: reveal-sparkle-float 1.6s ease-out infinite;
+}
+
 .felt-table {
   background:
     radial-gradient(ellipse at center, rgba(255, 255, 255, 0.06) 0%, rgba(0, 0, 0, 0.12) 100%),
