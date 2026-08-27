@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   dealRealityCards,
+  DELUSION_SUCCESS_WIN_COUNT,
   evaluateMatchOutcome,
   REALITY_CARD_IDS,
   REALITY_HAND_SIZE,
@@ -25,6 +26,7 @@ test("「着実な一撃」が見破られなければ固定20ダメージが通
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 50, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
 
   assert.equal(result.wasCaught, false);
@@ -44,6 +46,7 @@ test("「着実な一撃」が見破られると反動ダメージのみでゲ�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
 
   assert.equal(result.wasCaught, true);
@@ -63,6 +66,7 @@ test("「圧殺の一撃」は妄想ゲージ60%以上でダメージが2倍に�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 60, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(highGauge.damageDealt, 50);
 
@@ -75,6 +79,7 @@ test("「圧殺の一撃」は妄想ゲージ60%以上でダメージが2倍に�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 59, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(lowGauge.damageDealt, 25);
 });
@@ -89,6 +94,7 @@ test("「妄想の解放」は攻撃側の現在の妄想ゲージ値がその�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 42, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
 
   assert.equal(result.damageDealt, 42);
@@ -105,6 +111,7 @@ test("「痛烈な一撃」「素早い一撃」は固定ダメージでゲー�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(heavy.damageDealt, 30);
   assert.equal(heavy.gaugeDelta, 0);
@@ -118,6 +125,7 @@ test("「痛烈な一撃」「素早い一撃」は固定ダメージでゲー�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(quick.damageDealt, 20);
   assert.equal(quick.gaugeDelta, 0);
@@ -134,6 +142,7 @@ test("「疼く傷跡」は初撃10ダメージ＋以後3ターン、ターン�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(turn1.damageDealt, 10);
   assert.equal(turn1.dotDamage.B ?? 0, 0); // 付与された直後のターンではまだ発動しない
@@ -150,6 +159,7 @@ test("「疼く傷跡」は初撃10ダメージ＋以後3ターン、ターン�
     lifeTotals: turn1.lifeTotals,
     delusionGauges: turn1.delusionGauges,
     lingeringWounds: turn1.lingeringWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(turn2.dotDamage.B, 10);
   assert.equal(turn2.lifeTotals.B, 90 - 10); // 継続ダメージ分
@@ -165,6 +175,7 @@ test("「疼く傷跡」は初撃10ダメージ＋以後3ターン、ターン�
     lifeTotals: turn2.lifeTotals,
     delusionGauges: turn2.delusionGauges,
     lingeringWounds: turn2.lingeringWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(turn3.dotDamage.B, 10);
   assert.deepEqual(turn3.lingeringWounds.B, [{ damage: 10, turnsRemaining: 1 }]);
@@ -178,6 +189,7 @@ test("「疼く傷跡」は初撃10ダメージ＋以後3ターン、ターン�
     lifeTotals: turn3.lifeTotals,
     delusionGauges: turn3.delusionGauges,
     lingeringWounds: turn3.lingeringWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(turn4.dotDamage.B, 10);
   assert.deepEqual(turn4.lingeringWounds.B ?? [], []); // 3回発動して消滅
@@ -193,6 +205,7 @@ test("「疼く傷跡」が見破られると、初撃と継続ダメージの�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
 
   assert.equal(result.wasCaught, true);
@@ -212,6 +225,7 @@ test("「小さな一撃」は固定10ダメージでゲージは変動しない
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(result.damageDealt, 10);
   assert.equal(result.gaugeDelta, 0);
@@ -227,6 +241,7 @@ test("「休息」は成功すると30回復し、見破られると自分は回
     lifeTotals: { A: 60, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(success.selfHeal, 30);
   assert.equal(success.damageDealt, 0);
@@ -242,6 +257,7 @@ test("「休息」は成功すると30回復し、見破られると自分は回
     lifeTotals: { A: 60, B: 70 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(caught.selfHeal, 0);
   assert.equal(caught.selfDamage, 0);
@@ -260,6 +276,7 @@ test("回復は開始ライフ（100）を超えて回復しない", () => {
     lifeTotals: { A: 90, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(result.lifeTotals.A, 100);
 });
@@ -274,6 +291,7 @@ test("「瞑想」は成功すると妄想ゲージが30%下がり、見破ら�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 50, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(success.damageDealt, 0);
   assert.equal(success.gaugeDelta, -30);
@@ -288,6 +306,7 @@ test("「瞑想」は成功すると妄想ゲージが30%下がり、見破ら�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 50, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(caught.selfDamage, 0);
   assert.equal(caught.gaugeDelta, 30);
@@ -304,6 +323,7 @@ test("「無理な回復」はライフ部分のみ見破りで防御側回復�
     lifeTotals: { A: 40, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(success.selfHeal, 50);
   assert.equal(success.lifeTotals.A, 90);
@@ -319,6 +339,7 @@ test("「無理な回復」はライフ部分のみ見破りで防御側回復�
     lifeTotals: { A: 60, B: 40 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(caught.selfDamage, 0);
   assert.equal(caught.defenderHeal, 50);
@@ -338,6 +359,7 @@ test("「吸血」は成功すると申告量のダメージを与えて同量�
     lifeTotals: { A: 40, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(success.damageDealt, 35);
   assert.equal(success.selfHeal, 35);
@@ -356,6 +378,7 @@ test("「吸血」は成功すると申告量のダメージを与えて同量�
     lifeTotals: { A: 40, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(caught.damageDealt, 0);
   assert.equal(caught.selfHeal, 0);
@@ -376,6 +399,7 @@ test("「緩やかな回復」は成功すると3ターン継続回復、見破�
     lifeTotals: { A: 60, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(success.lifeTotals.A, 60); // このターンはまだ発動しない
   assert.deepEqual(success.lingeringWounds.A, [{ damage: -10, turnsRemaining: 3 }]);
@@ -390,6 +414,7 @@ test("「緩やかな回復」は成功すると3ターン継続回復、見破�
     lifeTotals: success.lifeTotals,
     delusionGauges: success.delusionGauges,
     lingeringWounds: success.lingeringWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(next.dotDamage.A, -10);
   assert.equal(next.lifeTotals.A, 70); // 60 + 10回復
@@ -403,6 +428,7 @@ test("「緩やかな回復」は成功すると3ターン継続回復、見破�
     lifeTotals: { A: 60, B: 70 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   // 継続回復の対象が見破った側（B）に切り替わる
   assert.equal(caught.lingeringWounds.A, undefined);
@@ -418,6 +444,7 @@ test("「緩やかな回復」は成功すると3ターン継続回復、見破�
     lifeTotals: caught.lifeTotals,
     delusionGauges: caught.delusionGauges,
     lingeringWounds: caught.lingeringWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(nextCaught.dotDamage.B, -10);
   assert.equal(nextCaught.lifeTotals.B, 80); // 70 + 10回復
@@ -433,6 +460,7 @@ test("妄想カードが見破られると攻撃側に反動ダメージ＋ゲ�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 40, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
     rng: rngSequence([0.5]),
   });
 
@@ -454,6 +482,7 @@ test("回復系の妄想は成功すると自分が回復し、見破られる�
     lifeTotals: { A: 60, B: 100 },
     delusionGauges: { A: 0, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
   });
   assert.equal(success.selfHeal, 30);
   assert.equal(success.damageDealt, 0);
@@ -470,6 +499,7 @@ test("回復系の妄想は成功すると自分が回復し、見破られる�
     lifeTotals: { A: 60, B: 70 },
     delusionGauges: { A: 40, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
     rng: rngSequence([0.5]),
   });
   assert.equal(caught.selfHeal, 0);
@@ -491,6 +521,7 @@ test("見破られた妄想カードの敗北抽選に当たると、妄想ゲ�
     lifeTotals: { A: 100, B: 100 },
     delusionGauges: { A: 40, B: 0 },
     lingeringWounds: noWounds,
+    delusionSuccessCounts: {},
     rng: rngSequence([0.3]),
   });
 
@@ -522,6 +553,66 @@ test("evaluateMatchOutcome: 両者同時に敗北条件を満たした場合は�
     gameOver: true,
     winnerId: null,
   });
+});
+
+test("delusionSuccessCounts: 妄想が成功すると+1、見破られたり現実カードだったりすると増えない", () => {
+  const success = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "delusion", delusionEffect: "damage", delusionDamage: 20 },
+    defense: { prediction: "reality" }, // 外れ
+    lifeTotals: { A: 100, B: 100 },
+    delusionGauges: { A: 0, B: 0 },
+    lingeringWounds: noWounds,
+    delusionSuccessCounts: { A: 2, B: 0 },
+  });
+  assert.equal(success.delusionSuccessCounts.A, 3);
+  assert.equal(success.delusionSuccessCounts.B, 0);
+
+  const caught = resolveTurn({
+    turnNumber: 2,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "delusion", delusionEffect: "damage", delusionDamage: 20 },
+    defense: { prediction: "delusion" }, // 的中
+    lifeTotals: success.lifeTotals,
+    delusionGauges: success.delusionGauges,
+    lingeringWounds: success.lingeringWounds,
+    delusionSuccessCounts: success.delusionSuccessCounts,
+  });
+  assert.equal(caught.delusionSuccessCounts.A, 3); // 見破られたので増えない
+
+  const realitySuccess = resolveTurn({
+    turnNumber: 3,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "reality", realityCardId: "quick_strike" },
+    defense: { prediction: "delusion" },
+    lifeTotals: caught.lifeTotals,
+    delusionGauges: caught.delusionGauges,
+    lingeringWounds: caught.lingeringWounds,
+    delusionSuccessCounts: caught.delusionSuccessCounts,
+  });
+  assert.equal(realitySuccess.delusionSuccessCounts.A, 3); // 現実カードでは増えない
+});
+
+test(`evaluateMatchOutcome: 妄想カードを見破られずに${DELUSION_SUCCESS_WIN_COUNT}回成功させると、ライフ等の状況に関わらず即座に勝利する`, () => {
+  const result = evaluateMatchOutcome(
+    { A: 10, B: 100 }, // Aはライフが低い状況でも
+    { A: 0, B: 0 },
+    { A: DELUSION_SUCCESS_WIN_COUNT, B: 0 },
+  );
+  assert.deepEqual(result, { gameOver: true, winnerId: "A" });
+});
+
+test("evaluateMatchOutcome: 妄想成功回数が規定回数未満なら、この条件では試合は終了しない", () => {
+  const result = evaluateMatchOutcome(
+    { A: 100, B: 100 },
+    { A: 0, B: 0 },
+    { A: DELUSION_SUCCESS_WIN_COUNT - 1, B: 0 },
+  );
+  assert.deepEqual(result, { gameOver: false, winnerId: null });
 });
 
 test("dealRealityCards: REALITY_HAND_SIZE枚を重複なく、全て現実カードの中から配る", () => {

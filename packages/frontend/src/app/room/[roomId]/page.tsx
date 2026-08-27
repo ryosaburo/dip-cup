@@ -60,6 +60,12 @@ export default function RoomPage() {
           )?.[1] ?? 0}
           %
         </p>
+        <p className="text-sm text-neutral-500">
+          妄想成功回数 {state.gameOverResult.delusionSuccessCounts[state.playerId] ?? 0} -{" "}
+          {Object.entries(state.gameOverResult.delusionSuccessCounts).find(
+            ([id]) => id !== state.playerId,
+          )?.[1] ?? 0}
+        </p>
         <Link href="/" className="underline">
           トップへ戻る
         </Link>
@@ -84,6 +90,7 @@ export default function RoomPage() {
           opponentName={state.opponentName}
           lifeTotals={state.lifeTotals}
           delusionGauges={state.delusionGauges}
+          delusionSuccessCounts={state.delusionSuccessCounts}
           turnNumber={state.turnNumber}
           phase={state.phase}
           dealtRealityCards={state.dealtRealityCards}

@@ -146,6 +146,7 @@ export function GameField({
   opponentName,
   lifeTotals,
   delusionGauges,
+  delusionSuccessCounts,
   turnNumber,
   phase,
   dealtRealityCards,
@@ -161,6 +162,8 @@ export function GameField({
   opponentName: string | null;
   lifeTotals: Record<string, number>;
   delusionGauges: Record<string, number>;
+  /** 各プレイヤーが見破られずに成功させた妄想カードの累計回数 */
+  delusionSuccessCounts: Record<string, number>;
   turnNumber: number;
   phase: Exclude<GamePhase, "idle" | "waiting_for_opponent" | "gameover" | "opponent_left">;
   /** 自分が攻撃側の時に選べる、ランダムに配られた現実カード */
@@ -177,6 +180,8 @@ export function GameField({
   const opponentLife = opponentId ? (lifeTotals[opponentId] ?? 0) : 0;
   const yourGauge = delusionGauges[playerId] ?? 0;
   const opponentGauge = opponentId ? (delusionGauges[opponentId] ?? 0) : 0;
+  const yourDelusionSuccessCount = delusionSuccessCounts[playerId] ?? 0;
+  const opponentDelusionSuccessCount = opponentId ? (delusionSuccessCounts[opponentId] ?? 0) : 0;
 
   const isResult = phase === "turn_result" && lastTurnResult !== null;
   const iWasAttacker = isResult ? lastTurnResult!.attackerId === playerId : null;
@@ -207,6 +212,7 @@ export function GameField({
               name={opponentName}
               life={opponentLife}
               gauge={opponentGauge}
+              delusionSuccessCount={opponentDelusionSuccessCount}
               isAttackerNow={iAmAttackerNow === null ? null : !iAmAttackerNow}
               pendingDamage={iAmAttackerNow === false ? pendingDamage : null}
               outcome={isResult ? lastTurnResult : null}
@@ -244,6 +250,7 @@ export function GameField({
               opponentName={opponentName}
               life={yourLife}
               gauge={yourGauge}
+              delusionSuccessCount={yourDelusionSuccessCount}
               phase={phase}
               dealtRealityCards={dealtRealityCards}
               pendingDamage={pendingDamage}

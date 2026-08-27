@@ -44,6 +44,8 @@ interface GameState {
   pendingDamage: number | null;
   lifeTotals: Record<string, number>;
   delusionGauges: Record<string, number>;
+  /** 各プレイヤーが見破られずに成功させた妄想カードの累計回数（規定回数で勝利） */
+  delusionSuccessCounts: Record<string, number>;
   lastTurnResult: TurnResult | null;
   nextAttackerId: string | null;
   /** 次の攻撃側に配られる現実カード（次のターンへ進むまでの一時保持） */
@@ -65,6 +67,7 @@ const initialState: GameState = {
   pendingDamage: null,
   lifeTotals: {},
   delusionGauges: {},
+  delusionSuccessCounts: {},
   lastTurnResult: null,
   nextAttackerId: null,
   nextDealtRealityCards: [],
@@ -103,12 +106,21 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
 
     socket.on(
       "game_start",
-      ({ turnNumber, opponentName, lifeTotals, delusionGauges, attackerId, dealtRealityCards }) => {
+      ({
+        turnNumber,
+        opponentName,
+        lifeTotals,
+        delusionGauges,
+        attackerId,
+        dealtRealityCards,
+        delusionSuccessCounts,
+      }) => {
         setState((s) => ({
           ...s,
           turnNumber,
           lifeTotals,
           delusionGauges,
+          delusionSuccessCounts,
           attackerId,
           dealtRealityCards,
           opponentName,
@@ -142,6 +154,7 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
         lastTurnResult: result,
         lifeTotals: result.lifeTotals,
         delusionGauges: result.delusionGauges,
+        delusionSuccessCounts: result.delusionSuccessCounts,
         nextAttackerId,
         nextDealtRealityCards,
         nextTurnReady: true,
@@ -149,12 +162,13 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
       }));
     });
 
-    socket.on("game_over", ({ winnerId, lifeTotals, delusionGauges }) => {
+    socket.on("game_over", ({ winnerId, lifeTotals, delusionGauges, delusionSuccessCounts }) => {
       setState((s) => ({
         ...s,
-        gameOverResult: { winnerId, lifeTotals, delusionGauges },
+        gameOverResult: { winnerId, lifeTotals, delusionGauges, delusionSuccessCounts },
         lifeTotals,
         delusionGauges,
+        delusionSuccessCounts,
         phase: "gameover",
       }));
     });

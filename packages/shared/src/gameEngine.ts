@@ -1,4 +1,5 @@
 import {
+  DELUSION_SUCCESS_WIN_COUNT,
   HEAVY_STRIKE_DAMAGE,
   LINGERING_WOUND_DURATION,
   LINGERING_WOUND_INITIAL_DAMAGE,
@@ -141,6 +142,7 @@ export function resolveTurn(params: {
   lifeTotals: Record<string, number>;
   delusionGauges: Record<string, number>;
   lingeringWounds: Record<string, LingeringWound[]>;
+  delusionSuccessCounts: Record<string, number>;
   rng?: () => number;
 }): TurnResult {
   const {
@@ -152,6 +154,7 @@ export function resolveTurn(params: {
     lifeTotals,
     delusionGauges,
     lingeringWounds,
+    delusionSuccessCounts,
   } = params;
   const rng = params.rng ?? Math.random;
 
@@ -248,6 +251,11 @@ export function resolveTurn(params: {
   const nextGauges = { ...delusionGauges };
   nextGauges[attackerId] = instantDefeat ? 100 : clampPercent(currentGauge + gaugeDelta);
 
+  const nextDelusionSuccessCounts = { ...delusionSuccessCounts };
+  if (attack.cardType === "delusion" && !wasCaught) {
+    nextDelusionSuccessCounts[attackerId] = (nextDelusionSuccessCounts[attackerId] ?? 0) + 1;
+  }
+
   return {
     turnNumber,
     attackerId,
@@ -265,6 +273,7 @@ export function resolveTurn(params: {
     lifeTotals: nextLifeTotals,
     delusionGauges: nextGauges,
     lingeringWounds: tickedWounds,
+    delusionSuccessCounts: nextDelusionSuccessCounts,
   };
 }
 
@@ -275,12 +284,23 @@ function clampLife(value: number): number {
 /**
  * ライフが0以下、または妄想ゲージが100%以上になったプレイヤーがいれば試合終了。
  * 両者同時に敗北条件を満たした場合は引き分け（winnerId: null）。
+ * また、妄想カードを見破られずに`DELUSION_SUCCESS_WIN_COUNT`回成功させたプレイヤーがいれば、
+ * その時点で即座にそのプレイヤーの勝利となる（他の条件より優先）。
  */
 export function evaluateMatchOutcome(
   lifeTotals: Record<string, number>,
   delusionGauges: Record<string, number>,
+  delusionSuccessCounts: Record<string, number> = {},
 ): { gameOver: boolean; winnerId: string | null } {
   const ids = Object.keys(lifeTotals);
+
+  const delusionWinnerId = ids.find(
+    (id) => (delusionSuccessCounts[id] ?? 0) >= DELUSION_SUCCESS_WIN_COUNT,
+  );
+  if (delusionWinnerId) {
+    return { gameOver: true, winnerId: delusionWinnerId };
+  }
+
   const defeated = ids.filter((id) => (lifeTotals[id] ?? 0) <= 0 || (delusionGauges[id] ?? 0) >= 100);
 
   if (defeated.length === 0) return { gameOver: false, winnerId: null };
