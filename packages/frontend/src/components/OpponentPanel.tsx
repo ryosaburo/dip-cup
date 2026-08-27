@@ -1,102 +1,89 @@
 "use client";
 
-import {
-  CARD_CONFIG,
-  SUPPORT_CARD_CONFIG,
-  tierOfCardId,
-  type PublicRoundOutcome,
-} from "@battle/shared";
-import { CardBack, RevealPromptCard, SupportCardFace } from "./PlayingCard";
+import type { CardType, TurnResult } from "@battle/shared";
+import { CardBack, GaugeBar, LifeBar, RevealCard } from "./PlayingCard";
 
-const TOTAL_HAND_SIZE = CARD_CONFIG.small.count + CARD_CONFIG.medium.count + CARD_CONFIG.large.count;
+const CARD_TYPE_LABEL: Record<CardType, string> = { reality: "現実", delusion: "妄想" };
 
 export function OpponentPanel({
   name,
-  matchWins,
-  isThinking,
+  life,
+  gauge,
+  isAttackerNow,
+  pendingDamage,
   outcome,
+  wasAttackerInOutcome,
   revealed,
 }: {
   name: string | null;
-  matchWins: number;
-  isThinking: boolean;
-  outcome: PublicRoundOutcome | null;
+  life: number;
+  gauge: number;
+  /** このターン相手が攻撃側かどうか（結果表示中はnull） */
+  isAttackerNow: boolean | null;
+  /** 相手が攻撃側で、自分が防御側として確認済みのダメージ量 */
+  pendingDamage: number | null;
+  outcome: TurnResult | null;
+  wasAttackerInOutcome: boolean;
   revealed: boolean;
 }) {
   return (
     <div className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-1">
         <span className="text-white font-semibold text-sm">{name ?? "相手"}</span>
-        <span className="text-white/80 text-xs font-bold bg-white/10 rounded-full px-2 py-0.5">
-          勝ち {matchWins}
-        </span>
+        <span className="text-white/80 text-xs font-bold">ライフ {life}</span>
       </div>
+      <LifeBar life={life} className="mb-1.5" />
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-fuchsia-300/80 text-[0.65rem]">妄想ゲージ</span>
+        <span className="text-fuchsia-300/80 text-[0.65rem] font-bold">{gauge}%</span>
+      </div>
+      <GaugeBar gauge={gauge} className="mb-2" />
 
-      {!outcome ? (
-        <div className="flex items-center gap-3">
-          <div className="flex -space-x-6">
-            {Array.from({ length: TOTAL_HAND_SIZE }).map((_, i) => (
-              <CardBack
-                key={i}
-                size="sm"
-                className="card-back-idle shadow-lg"
-                style={{
-                  animationDelay: `${i * 120}ms`,
-                  ["--idle-rot" as string]: `${(i - TOTAL_HAND_SIZE / 2) * 3}deg`,
-                  zIndex: i,
-                }}
-              />
-            ))}
+      {outcome ? (
+        wasAttackerInOutcome ? (
+          <div className="flex items-center gap-3">
+            <RevealCard
+              type={outcome.attack.cardType}
+              damage={outcome.attack.delusionDamage}
+              size="sm"
+              revealed={revealed}
+            />
+            <div
+              className={`text-xs font-bold ${revealed ? "card-pop-in" : "opacity-0"} ${
+                outcome.wasCaught ? "text-emerald-400" : "text-red-400"
+              }`}
+            >
+              {outcome.wasCaught ? "🎯 見破った！" : "😱 見破れなかった…"}
+            </div>
           </div>
-          {isThinking && (
-            <span className="text-white/60 text-xs animate-pulse whitespace-nowrap">
-              カードを選択中…
+        ) : (
+          <div className={`text-xs ${revealed ? "card-pop-in" : "opacity-0"}`}>
+            <p className="text-white/70 mb-1">
+              相手の予想：「{CARD_TYPE_LABEL[outcome.defense.prediction]}」
+            </p>
+            <p
+              className={`font-bold ${outcome.wasCaught ? "text-red-400" : "text-emerald-400"}`}
+            >
+              {outcome.wasCaught ? "😱 見破られた…" : "🎉 見破られなかった！"}
+            </p>
+          </div>
+        )
+      ) : isAttackerNow && pendingDamage !== null ? (
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <CardBack size="sm" />
+            <span className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[0.6rem] font-bold rounded px-1">
+              {pendingDamage}
             </span>
-          )}
+          </div>
+          <span className="text-white/60 text-xs">攻撃してきた…正体不明</span>
         </div>
       ) : (
-        <div className="space-y-1.5">
-          <div className="flex gap-1.5 flex-wrap items-center">
-            {outcome.selection.promptCardIds.length === 0 ? (
-              <span className="text-white/50 text-xs py-2">カードを使用しませんでした</span>
-            ) : (
-              outcome.selection.promptCardIds.map((id, i) => (
-                <div
-                  key={id}
-                  className={outcome.voidedCardIds.includes(id) ? "opacity-30 grayscale" : ""}
-                >
-                  <RevealPromptCard tier={tierOfCardId(id)} size="sm" revealed={revealed} delayMs={i * 180} />
-                </div>
-              ))
-            )}
-            {outcome.selection.supportCard ? (
-              <SupportCardFace
-                type={outcome.selection.supportCard}
-                label={SUPPORT_CARD_CONFIG[outcome.selection.supportCard].label}
-                size="sm"
-              />
-            ) : (
-              outcome.selection.supportCardUsed && (
-                <div
-                  className="w-12 h-[68px] rounded-lg border-2 border-dashed border-white/30 flex items-center justify-center text-white/50 text-[0.6em] text-center px-1"
-                  title="相手はサポートカードを使用しましたが、種類は非公開です"
-                >
-                  ？
-                </div>
-              )
-            )}
-          </div>
-          {outcome.voidedCardIds.length > 0 && (
-            <p className="text-[0.65rem] text-red-300">こちらの効果で相手のカードを無効化しました</p>
-          )}
-          <div
-            className={`text-xs font-bold ${revealed ? "card-pop-in" : "opacity-0"} ${
-              outcome.busted ? "text-red-400" : "text-white"
-            }`}
-            style={{ animationDelay: `${outcome.selection.promptCardIds.length * 180 + 150}ms` }}
-          >
-            {outcome.busted ? "暴走！" : `スコア ${outcome.score}`}
-          </div>
+        <div className="flex items-center gap-3">
+          <CardBack size="sm" className="card-back-idle shadow-lg" />
+          <span className="text-white/60 text-xs animate-pulse whitespace-nowrap">
+            {isAttackerNow ? "攻撃を選んでいます…" : "見破る準備をしています…"}
+          </span>
         </div>
       )}
     </div>

@@ -7,7 +7,7 @@ import { GameField } from "@/components/GameField";
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
-  const { state, submitSelection, proceedToNextRound } = useGameSocket();
+  const { state, submitAttack, submitDefense, proceedToNextTurn } = useGameSocket();
 
   if (state.phase === "idle") {
     return (
@@ -42,13 +42,23 @@ export default function RoomPage() {
   }
 
   if (state.phase === "gameover" && state.gameOverResult && state.playerId) {
+    const isDraw = state.gameOverResult.winnerId === null;
     const won = state.gameOverResult.winnerId === state.playerId;
     return (
       <Centered>
-        <h1 className="text-3xl font-bold">{won ? "勝利！" : "敗北…"}</h1>
+        <h1 className="text-3xl font-bold">{isDraw ? "引き分け" : won ? "勝利！" : "敗北…"}</h1>
         <p>
-          最終スコア {state.matchWins[state.playerId] ?? 0} -{" "}
-          {Object.entries(state.matchWins).find(([id]) => id !== state.playerId)?.[1] ?? 0}
+          最終ライフ {state.gameOverResult.lifeTotals[state.playerId] ?? 0} -{" "}
+          {Object.entries(state.gameOverResult.lifeTotals).find(
+            ([id]) => id !== state.playerId,
+          )?.[1] ?? 0}
+        </p>
+        <p className="text-sm text-neutral-500">
+          最終妄想ゲージ {state.gameOverResult.delusionGauges[state.playerId] ?? 0}% -{" "}
+          {Object.entries(state.gameOverResult.delusionGauges).find(
+            ([id]) => id !== state.playerId,
+          )?.[1] ?? 0}
+          %
         </p>
         <Link href="/" className="underline">
           トップへ戻る
@@ -58,10 +68,12 @@ export default function RoomPage() {
   }
 
   if (
-    (state.phase === "selecting" ||
+    (state.phase === "my_attack" ||
+      state.phase === "waiting_attack" ||
+      state.phase === "my_defense" ||
+      state.phase === "waiting_defense" ||
       state.phase === "waiting_for_result" ||
-      state.phase === "round_result") &&
-    state.hand &&
+      state.phase === "turn_result") &&
     state.playerId
   ) {
     return (
@@ -70,16 +82,16 @@ export default function RoomPage() {
           playerId={state.playerId}
           playerName={state.playerName}
           opponentName={state.opponentName}
-          matchWins={state.matchWins}
-          roundNumber={state.roundNumber}
-          winsNeeded={state.winsNeeded}
+          lifeTotals={state.lifeTotals}
+          delusionGauges={state.delusionGauges}
+          turnNumber={state.turnNumber}
           phase={state.phase}
-          hand={state.hand}
-          supportOptions={state.supportOptions}
-          onSubmit={submitSelection}
-          lastRoundResult={state.lastRoundResult}
-          nextRoundReady={state.nextRoundReady}
-          onNextRound={proceedToNextRound}
+          pendingDamage={state.pendingDamage}
+          onSubmitAttack={submitAttack}
+          onSubmitDefense={submitDefense}
+          lastTurnResult={state.lastTurnResult}
+          nextTurnReady={state.nextTurnReady}
+          onNextTurn={proceedToNextTurn}
         />
       </main>
     );

@@ -1,147 +1,130 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  dealSupportOptions,
-  resolveRound,
-  SUPPORT_CARD_DEAL_COUNT,
-  SUPPORT_CARD_POOL,
-} from "@battle/shared";
+import { evaluateMatchOutcome, resolveTurn } from "@battle/shared";
 
 function rngSequence(values: number[]): () => number {
   let i = 0;
   return () => values[Math.min(i++, values.length - 1)];
 }
 
-test("片方だけ暴走した場合は相手の即勝利", () => {
-  const result = resolveRound({
-    roundNumber: 1,
-    playerA: { playerId: "A", selection: { promptCardIds: ["large-1"] } }, // 50%
-    playerB: { playerId: "B", selection: { promptCardIds: ["small-1"] } }, // 4%
-    matchWins: {},
-    rng: rngSequence([0.1, 0.9]), // A: roll=10 < 50 -> bust, B: roll=90 >= 4 -> safe
+test("現実カードが見破られなければ固定ダメージが通り、攻撃側のゲージが下がる", () => {
+  const result = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "reality" },
+    defense: { prediction: "delusion" }, // 外れ
+    lifeTotals: { A: 100, B: 100 },
+    delusionGauges: { A: 50, B: 0 },
   });
 
-  assert.equal(result.winnerId, "B");
-  assert.equal(result.outcomes.A.busted, true);
-  assert.equal(result.outcomes.B.busted, false);
-  assert.equal(result.matchWins.B, 1);
+  assert.equal(result.wasCaught, false);
+  assert.equal(result.damageDealt, 20); // REALITY_DAMAGE
+  assert.equal(result.selfDamage, 0);
+  assert.equal(result.gaugeDelta, -15);
+  assert.equal(result.lifeTotals.B, 80);
+  assert.equal(result.lifeTotals.A, 100);
+  assert.equal(result.delusionGauges.A, 35);
 });
 
-test("暴走なしならスコアが高い方が勝つ", () => {
-  const result = resolveRound({
-    roundNumber: 1,
-    playerA: { playerId: "A", selection: { promptCardIds: ["large-1"] } }, // score 50 + no-support bonus 15 = 65
-    playerB: { playerId: "B", selection: { promptCardIds: ["small-1"] } }, // score 10 + bonus 15 = 25
-    matchWins: {},
-    rng: rngSequence([0.9, 0.9]), // どちらも暴走しない高いroll
+test("妄想カードが見破られなければ申告ダメージがそのまま通り、ゲージは変動しない", () => {
+  const result = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "delusion", delusionDamage: 35 },
+    defense: { prediction: "reality" }, // 外れ
+    lifeTotals: { A: 100, B: 100 },
+    delusionGauges: { A: 0, B: 0 },
   });
 
-  assert.equal(result.winnerId, "A");
-  assert.equal(result.isReplay, false);
+  assert.equal(result.wasCaught, false);
+  assert.equal(result.damageDealt, 35);
+  assert.equal(result.gaugeDelta, 0);
+  assert.equal(result.lifeTotals.B, 65);
+  assert.equal(result.delusionGauges.A, 0);
 });
 
-test("両者暴走した場合は再戦（勝者なし）", () => {
-  const result = resolveRound({
-    roundNumber: 1,
-    playerA: { playerId: "A", selection: { promptCardIds: ["large-1"] } },
-    playerB: { playerId: "B", selection: { promptCardIds: ["large-1"] } },
-    matchWins: {},
-    rng: rngSequence([0.1, 0.1]),
+test("妄想カードが見破られると攻撃側に反動ダメージ＋ゲージ上昇。抽選に外れれば即敗北しない", () => {
+  const result = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "delusion", delusionDamage: 30 },
+    defense: { prediction: "delusion" }, // 的中
+    lifeTotals: { A: 100, B: 100 },
+    delusionGauges: { A: 40, B: 0 },
+    rng: rngSequence([0.5]), // 0.5 >= 40/100 なので抽選には外れる
   });
 
-  assert.equal(result.winnerId, null);
-  assert.equal(result.isReplay, true);
+  assert.equal(result.wasCaught, true);
+  assert.equal(result.damageDealt, 0);
+  assert.equal(result.selfDamage, 30);
+  assert.equal(result.gaugeDelta, 30);
+  assert.equal(result.instantDefeat, false);
+  assert.equal(result.lifeTotals.A, 70);
+  assert.equal(result.lifeTotals.B, 100);
+  assert.equal(result.delusionGauges.A, 70);
 });
 
-test("暴走なしで同点の場合も再戦（勝者なし）", () => {
-  const result = resolveRound({
-    roundNumber: 1,
-    playerA: { playerId: "A", selection: { promptCardIds: ["small-1"] } },
-    playerB: { playerId: "B", selection: { promptCardIds: ["small-1"] } },
-    matchWins: {},
-    rng: rngSequence([0.9, 0.9]),
+test("見破られた妄想カードの敗北抽選に当たると、妄想ゲージが100になり即敗北扱いになる", () => {
+  const result = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "delusion", delusionDamage: 30 },
+    defense: { prediction: "delusion" },
+    lifeTotals: { A: 100, B: 100 },
+    delusionGauges: { A: 40, B: 0 },
+    rng: rngSequence([0.3]), // 0.3 < 40/100 なので抽選に当たる
   });
 
-  assert.equal(result.winnerId, null);
-  assert.equal(result.isReplay, true);
+  assert.equal(result.instantDefeat, true);
+  assert.equal(result.delusionGauges.A, 100);
+
+  const outcome = evaluateMatchOutcome(result.lifeTotals, result.delusionGauges);
+  assert.equal(outcome.gameOver, true);
+  assert.equal(outcome.winnerId, "B");
 });
 
-test("「破壊」を使うと相手のカードがランダムで1枚無効化される", () => {
-  const result = resolveRound({
-    roundNumber: 1,
-    playerA: {
-      playerId: "A",
-      selection: { promptCardIds: ["small-1", "medium-1"] },
-    },
-    playerB: { playerId: "B", selection: { promptCardIds: [], supportCard: "removeCard" } },
-    matchWins: {},
-    // [破壊の対象抽選(index=1→medium-1を無効化), Aのロール, Bのロール]
-    rng: rngSequence([0.6, 0.9, 0.9]),
+test("現実カードが見破られても反動ダメージのみで、ゲージは変動しない", () => {
+  const result = resolveTurn({
+    turnNumber: 1,
+    attackerId: "A",
+    defenderId: "B",
+    attack: { cardType: "reality" },
+    defense: { prediction: "reality" }, // 的中
+    lifeTotals: { A: 100, B: 100 },
+    delusionGauges: { A: 0, B: 0 },
   });
 
-  assert.deepEqual(result.outcomes.A.voidedCardIds, ["medium-1"]);
-  assert.equal(result.outcomes.A.score, 10 + 15); // small1枚分のみ+未使用ボーナス
-  assert.equal(result.winnerId, "A");
+  assert.equal(result.wasCaught, true);
+  assert.equal(result.damageDealt, 0);
+  assert.equal(result.selfDamage, 20);
+  assert.equal(result.gaugeDelta, 0);
+  assert.equal(result.lifeTotals.A, 80);
+  assert.equal(result.lifeTotals.B, 100);
+  assert.equal(result.delusionGauges.A, 0);
 });
 
-test("「強化」を使うと自分のカードからランダムで1枚のスコアが2倍になる", () => {
-  const result = resolveRound({
-    roundNumber: 1,
-    playerA: {
-      playerId: "A",
-      selection: { promptCardIds: ["small-1", "large-1"], supportCard: "randomBoost" },
-    },
-    playerB: { playerId: "B", selection: { promptCardIds: [] } },
-    matchWins: {},
-    // [Aのロール, Bのロール, 強化の対象抽選(index=1→large-1が2倍)]
-    rng: rngSequence([0.9, 0.9, 0.6]),
+test("evaluateMatchOutcome: ライフ0またはゲージ100のプレイヤーがいれば相手の勝ち", () => {
+  assert.deepEqual(evaluateMatchOutcome({ A: 50, B: 50 }, { A: 0, B: 0 }), {
+    gameOver: false,
+    winnerId: null,
   });
-
-  // small(10)+large(50) + large分をもう一度加算(+50) = 110（未使用ボーナスは無し）
-  assert.equal(result.outcomes.A.score, 110);
-});
-
-test("「道連れ」は自分が暴走した場合のみ、確率で相手の過学習確率も上げる", () => {
-  const result = resolveRound({
-    roundNumber: 1,
-    playerA: {
-      playerId: "A",
-      selection: { promptCardIds: ["large-1"], supportCard: "curse" }, // 過学習50%
-    },
-    playerB: { playerId: "B", selection: { promptCardIds: ["small-1"] } }, // 過学習4%
-    matchWins: {},
-    // [Aのロール(10<50で暴走), Bのロール(20, 元の4%では非暴走だが+30%後の34%では暴走), 道連れ発動判定(50<75で発動)]
-    rng: rngSequence([0.1, 0.2, 0.5]),
+  assert.deepEqual(evaluateMatchOutcome({ A: 0, B: 50 }, { A: 0, B: 0 }), {
+    gameOver: true,
+    winnerId: "B",
   });
-
-  assert.equal(result.outcomes.A.busted, true);
-  assert.equal(result.outcomes.B.overlearnChance, 34);
-  assert.equal(result.outcomes.B.busted, true);
-  assert.equal(result.winnerId, null); // 両者暴走で再戦
-});
-
-test("「道連れ」は自分が暴走しなければ発動しない", () => {
-  const result = resolveRound({
-    roundNumber: 1,
-    playerA: {
-      playerId: "A",
-      selection: { promptCardIds: ["small-1"], supportCard: "curse" }, // 過学習4%、暴走しない
-    },
-    playerB: { playerId: "B", selection: { promptCardIds: ["small-1"] } },
-    matchWins: {},
-    rng: rngSequence([0.9, 0.9]),
+  assert.deepEqual(evaluateMatchOutcome({ A: 50, B: 50 }, { A: 100, B: 0 }), {
+    gameOver: true,
+    winnerId: "B",
   });
-
-  assert.equal(result.outcomes.A.busted, false);
-  assert.equal(result.outcomes.B.overlearnChance, 4); // 道連れが発動していないので上がらない
 });
 
-test("dealSupportOptionsは重複なく規定枚数を母集団から選ぶ", () => {
-  const dealt = dealSupportOptions(rngSequence([0.1, 0.5, 0.9, 0.3]));
-
-  assert.equal(dealt.length, SUPPORT_CARD_DEAL_COUNT);
-  assert.equal(new Set(dealt).size, dealt.length);
-  for (const type of dealt) {
-    assert.ok(SUPPORT_CARD_POOL.includes(type));
-  }
+test("evaluateMatchOutcome: 両者同時に敗北条件を満たした場合は引き分け", () => {
+  assert.deepEqual(evaluateMatchOutcome({ A: 0, B: 0 }, { A: 0, B: 0 }), {
+    gameOver: true,
+    winnerId: null,
+  });
 });
