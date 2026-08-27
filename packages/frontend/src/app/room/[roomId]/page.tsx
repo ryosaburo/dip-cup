@@ -51,6 +51,14 @@ export default function RoomPage() {
     const won = state.gameOverResult.winnerId === state.playerId;
     return (
       <Centered>
+        {!isDraw && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={won ? "/win.jpg" : "/lose.jpg"}
+            alt={won ? "勝利" : "敗北"}
+            className="w-48 sm:w-64"
+          />
+        )}
         <h1 className="text-3xl font-bold">{isDraw ? "引き分け" : won ? "勝利！" : "敗北…"}</h1>
         <p>
           最終ライフ {state.gameOverResult.lifeTotals[state.playerId] ?? 0} -{" "}
