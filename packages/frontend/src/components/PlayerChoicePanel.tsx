@@ -109,7 +109,8 @@ export function PlayerChoicePanel({
       );
       onSubmitAttack({ cardType: "delusion", delusionEffect, delusionDamage: clampedDamage });
     } else if (choice.realityCardId === "life_drain") {
-      onSubmitAttack({ cardType: "reality", realityCardId: "life_drain", realityAmount: lifeDrainAmount });
+      const clampedAmount = Math.min(LIFE_DRAIN_MAX, Math.max(LIFE_DRAIN_MIN, Math.round(lifeDrainAmount)));
+      onSubmitAttack({ cardType: "reality", realityCardId: "life_drain", realityAmount: clampedAmount });
     } else {
       onSubmitAttack({ cardType: "reality", realityCardId: choice.realityCardId });
     }
@@ -174,9 +175,6 @@ export function PlayerChoicePanel({
             あなたの攻撃ターンです。ランダムに配られた現実カードから1枚、または妄想カードを選んでください（見破られると効果は自分に跳ね返ります）
           </p>
           <p className="text-[var(--pop-ink-soft)] text-xs sm:text-sm">現実カード（今ターンだけ選べる3種）</p>
-          <div className="text-center text-3xl sm:text-4xl book-appear -mb-2" aria-hidden="true">
-            📖✨
-          </div>
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {dealtRealityCards.map((id, i) => {
               const config = REALITY_CARD_CONFIG[id];
@@ -213,23 +211,25 @@ export function PlayerChoicePanel({
                 </button>
               );
             })}
-          </div>
 
-          <p className="text-[var(--pop-ink-soft)] text-xs sm:text-sm pt-1">妄想カード</p>
-          <button
-            type="button"
-            onClick={() => setChoice({ cardType: "delusion" })}
-            className={`pop-bounce card-fly-in ${
-              choice?.cardType === "delusion" ? "-translate-y-1.5 ring-4 ring-yellow-300 rounded-2xl" : ""
-            }`}
-            style={{ animationDelay: "420ms" } as React.CSSProperties}
-          >
-            <div className="w-28 sm:w-32 md:w-36 aspect-[5/7] rounded-2xl border-[3px] border-white shadow-[0_5px_0_rgba(150,120,200,0.35)] bg-gradient-to-br from-fuchsia-300 via-pink-400 to-purple-400 text-white flex flex-col items-center justify-center gap-1">
-              <span className="text-xl sm:text-2xl drop-shadow">{delusionEffect === "heal" ? "💚" : "🌀"}</span>
-              <span className="font-bold text-sm sm:text-base drop-shadow">妄想</span>
-              <span className="text-xs sm:text-sm opacity-95">自由{delusionDamage}</span>
+            <div className="col-start-2 flex flex-col items-center gap-1.5 pt-2">
+              <p className="text-[var(--pop-ink-soft)] text-xs sm:text-sm">妄想カード</p>
+              <button
+                type="button"
+                onClick={() => setChoice({ cardType: "delusion" })}
+                className={`pop-bounce card-fly-in w-full ${
+                  choice?.cardType === "delusion" ? "-translate-y-1.5 ring-4 ring-yellow-300 rounded-2xl" : ""
+                }`}
+                style={{ animationDelay: "420ms" } as React.CSSProperties}
+              >
+                <div className="aspect-[5/7] w-full max-w-[110px] sm:max-w-[130px] md:max-w-[150px] mx-auto rounded-2xl border-[3px] border-white shadow-[0_5px_0_rgba(150,120,200,0.35)] bg-gradient-to-br from-fuchsia-300 via-pink-400 to-purple-400 text-white flex flex-col items-center justify-center gap-1">
+                  <span className="text-xl sm:text-2xl drop-shadow">{delusionEffect === "heal" ? "💚" : "🌀"}</span>
+                  <span className="font-bold text-sm sm:text-base drop-shadow">妄想</span>
+                  <span className="text-xs sm:text-sm opacity-95">自由{delusionDamage}</span>
+                </div>
+              </button>
             </div>
-          </button>
+          </div>
         </div>
 
         {choice?.cardType === "reality" && (
@@ -255,18 +255,37 @@ export function PlayerChoicePanel({
 
         {choice?.cardType === "reality" && choice.realityCardId === "life_drain" && (
           <div className="space-y-1.5">
-            <div className="flex justify-between text-xs sm:text-sm text-[var(--pop-ink-soft)]">
+            <div className="flex items-center justify-between gap-2 text-xs sm:text-sm text-[var(--pop-ink-soft)]">
               <span>吸血の申告ダメージ量</span>
-              <span className="font-bold text-sky-600">{lifeDrainAmount}</span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={LIFE_DRAIN_MIN}
+                  max={LIFE_DRAIN_MAX}
+                  value={lifeDrainAmount}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setLifeDrainAmount(LIFE_DRAIN_MIN);
+                      return;
+                    }
+                    const parsed = Number(raw);
+                    if (Number.isNaN(parsed)) return;
+                    setLifeDrainAmount(parsed);
+                  }}
+                  onBlur={() =>
+                    setLifeDrainAmount((v) =>
+                      Math.min(LIFE_DRAIN_MAX, Math.max(LIFE_DRAIN_MIN, Math.round(v))),
+                    )
+                  }
+                  className="w-16 sm:w-20 rounded-xl border-2 border-sky-200 bg-white px-2 py-1 text-right font-bold text-sky-600 text-sm sm:text-base focus:outline-none focus:border-sky-400"
+                />
+                <span className="text-[var(--pop-ink-soft)] text-xs whitespace-nowrap">
+                  （{LIFE_DRAIN_MIN}〜{LIFE_DRAIN_MAX}）
+                </span>
+              </div>
             </div>
-            <input
-              type="range"
-              min={LIFE_DRAIN_MIN}
-              max={LIFE_DRAIN_MAX}
-              value={lifeDrainAmount}
-              onChange={(e) => setLifeDrainAmount(Number(e.target.value))}
-              className="w-full accent-sky-400"
-            />
             <p className="text-xs sm:text-sm text-[var(--pop-ink-soft)]">
               見破られなければこの量だけ相手にダメージを与え、同じ量だけ自分が回復する／見破られると回復できず、この量の反動ダメージが自分に入る
             </p>
