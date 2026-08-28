@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 interface Shard {
@@ -67,13 +67,15 @@ function playIndexShatterSE() {
   }
 }
 
+const emptySubscribe = () => () => {};
+
 export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
     if (!active || !mounted) return;
@@ -127,7 +129,6 @@ export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }
           const triCenterY = (tri[0][1] + tri[1][1] + tri[2][1]) / 3;
 
           const angle = Math.atan2(triCenterY - centerY, triCenterX - centerX);
-          // 適度な初速（画面内にしっかり留まる速度）
           const speed = Math.random() * 8 + 4;
 
           const relPoints: [number, number][] = tri.map(([px, py]) => [
@@ -135,7 +136,6 @@ export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }
             py - triCenterY,
           ]);
 
-          // ガラスらしい発光色
           const colors = [
             "rgba(255, 255, 255, 0.9)",
             "rgba(200, 230, 255, 0.85)",
@@ -148,7 +148,7 @@ export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }
             x: triCenterX,
             y: triCenterY,
             vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 3,
-            vy: Math.sin(angle) * speed - Math.random() * 5 - 2, // 一度上に跳ね上がる
+            vy: Math.sin(angle) * speed - Math.random() * 5 - 2,
             rotation: 0,
             vRot: (Math.random() - 0.5) * 0.15,
             opacity: 1,
@@ -165,7 +165,6 @@ export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }
       const elapsed = (time - startTime) / 1000;
       ctx.clearRect(0, 0, width, height);
 
-      // 白フラッシュ（0.06秒で素早く減衰して破片を見せる）
       if (elapsed < 0.08) {
         ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, 0.8 - elapsed * 10)})`;
         ctx.fillRect(0, 0, width, height);
@@ -176,12 +175,12 @@ export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }
       for (const s of shards) {
         s.x += s.vx;
         s.y += s.vy;
-        s.vy += 0.35; // 重力加速度で下へ落ちる
-        s.vx *= 0.98; // 空気抵抗
+        s.vy += 0.35;
+        s.vx *= 0.98;
         s.rotation += s.vRot;
 
         if (elapsed > 0.8) {
-          s.opacity -= 0.015; // 0.8秒後から徐々にフェードアウト
+          s.opacity -= 0.015;
         }
 
         if (s.opacity > 0 && s.y < height + 100) {
