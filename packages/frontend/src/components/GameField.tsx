@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   REALITY_CARD_CONFIG,
+  STARTING_LIFE,
   type AttackSelection,
   type CardType,
   type DefenseSelection,
@@ -10,6 +11,7 @@ import {
   type TurnResult,
 } from "@battle/shared";
 import type { GamePhase } from "@/context/GameSocketProvider";
+import { CrackOverlay } from "./CrackOverlay";
 import { OpponentPanel } from "./OpponentPanel";
 import { PlayerChoicePanel } from "./PlayerChoicePanel";
 
@@ -114,7 +116,7 @@ function CardTypeRevealImage({ cardType, active }: { cardType: CardType; active:
         <img
           src={CARD_TYPE_IMAGE[cardType]}
           alt={CARD_TYPE_LABEL[cardType]}
-          className={`relative w-32 sm:w-40 ${
+          className={`relative w-40 sm:w-56 md:w-64 ${
             isDelusion ? "reveal-image-delusion" : "reveal-image-reality"
           }`}
         />
@@ -128,13 +130,13 @@ function DotLine({ amount, who }: { amount: number; who: string }) {
   if (amount === 0) return null;
   if (amount > 0) {
     return (
-      <p className="text-red-300 text-[0.65rem] mt-0.5">
+      <p className="text-rose-600 text-xs sm:text-sm mt-0.5">
         🩸継続ダメージで{who}に{amount}
       </p>
     );
   }
   return (
-    <p className="text-emerald-300 text-[0.65rem] mt-0.5">
+    <p className="text-emerald-600 text-xs sm:text-sm mt-0.5">
       💚継続回復で{who}に{-amount}回復
     </p>
   );
@@ -197,8 +199,15 @@ export function GameField({
         : iWasAttacker;
 
   return (
-    <div className="felt-table relative rounded-2xl border border-white/10 shadow-xl p-4 space-y-3">
-      <div className="text-center text-white/70 text-xs">ターン {turnNumber}</div>
+    <div
+      className={`pop-stage relative rounded-[2rem] shadow-xl p-4 sm:p-6 md:p-8 space-y-3 sm:space-y-4 ${
+        yourLife <= 0 ? "shatter-impact" : ""
+      }`}
+    >
+      <CrackOverlay lifeRatio={yourLife / STARTING_LIFE} />
+      <div className="relative z-10 text-center text-[var(--pop-ink-soft)] text-xs sm:text-sm">
+        ターン {turnNumber}
+      </div>
 
       <RevealSequencer active={isResult} roundKey={lastTurnResult?.turnNumber ?? turnNumber}>
         {(revealed) => (
@@ -208,6 +217,7 @@ export function GameField({
               active={isResult && revealed}
             />
 
+            <div className="relative z-10 space-y-3 sm:space-y-4">
             <OpponentPanel
               name={opponentName}
               life={opponentLife}
@@ -222,11 +232,13 @@ export function GameField({
 
             <div className="flex items-center justify-center py-1 min-h-[2.5rem]">
               {(phase === "my_attack" || phase === "waiting_attack") && (
-                <span className="text-white/30 text-[0.65rem] tracking-[0.4em] font-bold">VS</span>
+                <span className="pop-title text-[var(--pop-ink-soft)] text-xs sm:text-sm tracking-[0.4em]">
+                  VS
+                </span>
               )}
               {isResult && (
                 <div className="banner-pop text-center">
-                  <p className="text-white font-bold text-xs">
+                  <p className="text-[var(--pop-ink)] font-bold text-xs sm:text-sm md:text-base">
                     {describeForViewer(lastTurnResult!, iWasAttacker!, displayPlayerName, displayOpponentName)}
                   </p>
                   <DotLine amount={lastTurnResult!.dotDamage[playerId] ?? 0} who={displayPlayerName} />
@@ -236,7 +248,7 @@ export function GameField({
                   <button
                     disabled={!nextTurnReady}
                     onClick={onNextTurn}
-                    className="mt-2 rounded-md bg-white text-black px-4 py-1.5 text-xs font-semibold disabled:opacity-40 transition-transform active:scale-95"
+                    className="pop-bounce mt-3 rounded-full bg-gradient-to-r from-fuchsia-400 to-violet-400 text-white px-6 py-2 sm:py-2.5 text-sm sm:text-base font-bold shadow-[0_5px_0_rgba(150,120,200,0.35)] disabled:opacity-40 disabled:shadow-none"
                   >
                     {nextTurnReady ? "次のターンへ" : "サーバー処理中…"}
                   </button>
@@ -260,6 +272,7 @@ export function GameField({
               wasAttackerInOutcome={iWasAttacker ?? false}
               revealed={revealed}
             />
+            </div>
           </>
         )}
       </RevealSequencer>

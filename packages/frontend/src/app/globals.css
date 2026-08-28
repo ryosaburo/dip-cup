@@ -1,8 +1,18 @@
+@import url("https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fff0f6;
+  --foreground: #4a3b6b;
+
+  /* --- ふわふわポップテーマ --- */
+  --pop-ink: #4a3b6b;
+  --pop-ink-soft: #7a6a9c;
+  --pop-cloud: #fffaf5;
+  --pop-reality: #7dd3fc;
+  --pop-reality-deep: #38bdf8;
+  --pop-delusion: #f9a8d4;
+  --pop-delusion-deep: #e879f9;
 }
 
 @theme inline {
@@ -12,17 +22,15 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: linear-gradient(160deg, #fff0f6 0%, #f2eeff 45%, #eafff5 100%);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: "M PLUS Rounded 1c", Arial, Helvetica, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.pop-title {
+  font-family: "Mochiy Pop One", "M PLUS Rounded 1c", sans-serif;
 }
 
 /* --- Card game field --- */
@@ -100,6 +108,52 @@ body {
 
 .card-pop-in {
   animation: card-pop-in 0.25s ease-out both;
+}
+
+/* --- ターン開始：魔法の本から手札カードが飛び出してくる演出 --- */
+
+@keyframes book-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(6px);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.15) translateY(0);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-4px);
+  }
+}
+
+.book-appear {
+  animation: book-appear 1.1s ease-out both;
+}
+
+@keyframes card-fly-in {
+  0% {
+    opacity: 0;
+    transform: translate(var(--fly-x, 0), -70px) scale(0.25) rotate(var(--fly-rot, 0deg));
+  }
+  55% {
+    opacity: 1;
+  }
+  75% {
+    transform: translate(0, 4px) scale(1.05) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+}
+
+.card-fly-in {
+  animation: card-fly-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes card-back-idle {
@@ -269,16 +323,181 @@ body {
   animation: reveal-sparkle-float 1.6s ease-out infinite;
 }
 
-.felt-table {
+/* --- ふわふわポップなステージ背景 --- */
+
+.pop-stage {
+  position: relative;
+  overflow: hidden;
   background:
-    radial-gradient(ellipse at center, rgba(255, 255, 255, 0.06) 0%, rgba(0, 0, 0, 0.12) 100%),
-    linear-gradient(160deg, #0f4d3a 0%, #0b3b2d 55%, #082a21 100%);
+    radial-gradient(circle at 12% 15%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 40%),
+    radial-gradient(circle at 88% 82%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 45%),
+    linear-gradient(150deg, #ffd9ec 0%, #dcd6ff 50%, #d3f8e2 100%);
 }
 
-@media (prefers-color-scheme: dark) {
-  .felt-table {
-    background:
-      radial-gradient(ellipse at center, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.25) 100%),
-      linear-gradient(160deg, #0c3a2c 0%, #082a21 55%, #051c16 100%);
+.pop-stage::before,
+.pop-stage::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.55);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.pop-stage::before {
+  width: 140px;
+  height: 90px;
+  top: -30px;
+  left: -20px;
+  animation: pop-cloud-drift 9s ease-in-out infinite;
+}
+
+.pop-stage::after {
+  width: 180px;
+  height: 110px;
+  bottom: -40px;
+  right: -30px;
+  animation: pop-cloud-drift 11s ease-in-out infinite reverse;
+}
+
+@keyframes pop-cloud-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
   }
+  50% {
+    transform: translate(14px, 10px) scale(1.06);
+  }
+}
+
+/* --- ふわふわクラウドパネル --- */
+
+.pop-panel {
+  background: rgba(255, 250, 245, 0.92);
+  border: 3px solid #ffffff;
+  border-radius: 1.75rem;
+  color: var(--pop-ink);
+  box-shadow:
+    0 6px 0 rgba(150, 120, 200, 0.18),
+    0 14px 24px rgba(150, 120, 200, 0.18);
+}
+
+.pop-bounce {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pop-bounce:active {
+  transform: scale(0.93);
+}
+
+.pop-bounce:hover {
+  transform: translateY(-2px) scale(1.03);
+}
+
+/* --- ライフが減るほどヒビが入るオーバーレイ --- */
+
+.crack-line {
+  fill: none;
+  stroke: #4a3b6b;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition:
+    opacity 0.6s ease,
+    stroke-width 0.6s ease;
+}
+
+.crack-line.crack-visible {
+  opacity: 0.55;
+}
+
+.crack-line.crack-shattered {
+  opacity: 0.85;
+  stroke-width: 2.2;
+}
+
+@keyframes crack-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.crack-shatter-flash {
+  animation: crack-flash 0.6s ease-out both;
+}
+
+@keyframes shatter-impact {
+  0% {
+    transform: scale(1);
+  }
+  20% {
+    transform: scale(1.02) rotate(-0.4deg);
+  }
+  45% {
+    transform: scale(0.985) rotate(0.4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.shatter-impact {
+  animation: shatter-impact 0.5s ease-out both;
+}
+
+/* --- 結果画面：勝利はふわっとポップイン、敗北は現実へ砕け落ちる --- */
+
+@keyframes pop-win-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08) rotate(3deg);
+  }
+  80% {
+    transform: scale(0.97) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.pop-win-in {
+  animation: pop-win-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes shatter-to-reality {
+  0% {
+    opacity: 0;
+    transform: scale(1.3) rotate(-4deg);
+    filter: blur(10px) brightness(2.2) contrast(0.6) saturate(0);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(0.95) rotate(2deg);
+    filter: blur(2px) brightness(1.4) contrast(1.1) saturate(0.5);
+  }
+  70% {
+    transform: scale(1.03) rotate(-1deg);
+    filter: blur(0) brightness(1) contrast(1) saturate(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: none;
+  }
+}
+
+.shatter-to-reality {
+  animation: shatter-to-reality 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
