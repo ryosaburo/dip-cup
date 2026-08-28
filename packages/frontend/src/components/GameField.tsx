@@ -87,6 +87,7 @@ const DELUSION_SPARKLES = [
 /**
  * 見破り結果（現実／妄想）を画面いっぱいに大きく表示する。ビューポート全体をポータルで覆い、
  * 妄想はメルヘンチックに華やかへ、現実はどんより重く沈む・衝撃を受けるように演出を分ける。
+ * 攻撃を受ける側（防御側）にのみ表示する。
  * 画面の任意の場所をタップすると閉じられる（「次のターンへ」ボタンと重なるための対策）。
  */
 function CardTypeRevealImage({ cardType, active }: { cardType: CardType; active: boolean }) {
@@ -104,35 +105,26 @@ function CardTypeRevealImage({ cardType, active }: { cardType: CardType; active:
         isDelusion ? "reveal-backdrop-delusion" : "reveal-backdrop-reality"
       }`}
     >
-      <span className="relative flex flex-col items-center justify-center gap-4 sm:gap-6">
-        <span className="relative flex items-center justify-center">
-          <span className={isDelusion ? "reveal-delusion-aura" : "reveal-reality-aura"} />
-          {isDelusion &&
-            DELUSION_SPARKLES.map((sparkle, i) => (
-              <span
-                key={i}
-                className="reveal-sparkle absolute text-2xl sm:text-3xl"
-                style={{ ...sparkle.style, animationDelay: sparkle.delay }}
-              >
-                {sparkle.emoji}
-              </span>
-            ))}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={CARD_TYPE_IMAGE[cardType]}
-            alt={CARD_TYPE_LABEL[cardType]}
-            className={`relative w-56 sm:w-80 md:w-[26rem] ${
-              isDelusion ? "reveal-image-delusion" : "reveal-image-reality"
-            }`}
-          />
-        </span>
-        <span
-          className={`pop-title text-4xl sm:text-5xl md:text-6xl tracking-[0.3em] ${
-            isDelusion ? "reveal-label-delusion" : "reveal-label-reality"
+      <span className="relative flex items-center justify-center">
+        <span className={isDelusion ? "reveal-delusion-aura" : "reveal-reality-aura"} />
+        {isDelusion &&
+          DELUSION_SPARKLES.map((sparkle, i) => (
+            <span
+              key={i}
+              className="reveal-sparkle absolute text-2xl sm:text-3xl"
+              style={{ ...sparkle.style, animationDelay: sparkle.delay }}
+            >
+              {sparkle.emoji}
+            </span>
+          ))}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={CARD_TYPE_IMAGE[cardType]}
+          alt={CARD_TYPE_LABEL[cardType]}
+          className={`relative w-56 sm:w-80 md:w-[26rem] ${
+            isDelusion ? "reveal-image-delusion" : "reveal-image-reality"
           }`}
-        >
-          {CARD_TYPE_LABEL[cardType]}
-        </span>
+        />
       </span>
     </button>,
     document.body,
@@ -239,7 +231,7 @@ export function GameField({
           <>
             <CardTypeRevealImage
               cardType={lastTurnResult?.attack.cardType ?? "reality"}
-              active={isResult && revealed}
+              active={isResult && revealed && iWasAttacker === false}
             />
 
             <div className="relative z-10 space-y-3 sm:space-y-4">
