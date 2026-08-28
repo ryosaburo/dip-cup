@@ -17,6 +17,7 @@ import {
   type TurnResult,
 } from "@battle/shared";
 import type { GamePhase } from "@/context/GameSocketProvider";
+import { unlockAudio } from "@/lib/sound";
 import { GaugeBar, LifeBar, RevealCard } from "./PlayingCard";
 
 const CARD_TYPE_LABEL: Record<CardType, string> = { reality: "現実", delusion: "妄想" };
@@ -100,6 +101,7 @@ export function PlayerChoicePanel({
 
   function handleSubmitAttack() {
     if (!choice) return;
+    unlockAudio();
     if (choice.cardType === "delusion") {
       const clampedDamage = Math.min(
         DELUSION_DAMAGE_MAX,
@@ -378,14 +380,20 @@ export function PlayerChoicePanel({
         <div className="flex justify-center gap-3">
           <button
             type="button"
-            onClick={() => onSubmitDefense({ prediction: "reality" })}
+            onClick={() => {
+              unlockAudio();
+              onSubmitDefense({ prediction: "reality" });
+            }}
             className="pop-bounce rounded-full bg-gradient-to-r from-sky-300 to-blue-400 text-white px-6 py-3 text-sm sm:text-base font-bold shadow-[0_5px_0_rgba(150,120,200,0.35)]"
           >
             現実だと思う
           </button>
           <button
             type="button"
-            onClick={() => onSubmitDefense({ prediction: "delusion" })}
+            onClick={() => {
+              unlockAudio();
+              onSubmitDefense({ prediction: "delusion" });
+            }}
             className="pop-bounce rounded-full bg-gradient-to-r from-fuchsia-300 to-purple-400 text-white px-6 py-3 text-sm sm:text-base font-bold shadow-[0_5px_0_rgba(150,120,200,0.35)]"
           >
             妄想だと思う
