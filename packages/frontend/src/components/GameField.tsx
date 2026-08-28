@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   REALITY_CARD_CONFIG,
-  STARTING_LIFE,
   type AttackSelection,
   type CardType,
   type DefenseSelection,
@@ -84,45 +84,57 @@ const DELUSION_SPARKLES = [
 ];
 
 /**
- * 見破り結果（現実／妄想）を画面中央に大きく表示する。中央から徐々に拡大しながら出現し、
- * 妄想はメルヘンチックに華やかへ、現実はどんより重く沈むように演出を分ける。
+ * 見破り結果（現実／妄想）を画面いっぱいに大きく表示する。ビューポート全体をポータルで覆い、
+ * 妄想はメルヘンチックに華やかへ、現実はどんより重く沈む・衝撃を受けるように演出を分ける。
  * 画面の任意の場所をタップすると閉じられる（「次のターンへ」ボタンと重なるための対策）。
  */
 function CardTypeRevealImage({ cardType, active }: { cardType: CardType; active: boolean }) {
   const [dismissed, setDismissed] = useState(false);
-  if (!active || dismissed) return null;
+  if (!active || dismissed || typeof document === "undefined") return null;
 
   const isDelusion = cardType === "delusion";
 
-  return (
+  return createPortal(
     <button
       type="button"
       onClick={() => setDismissed(true)}
       aria-label="タップして閉じる"
-      className="absolute inset-0 z-30 flex cursor-pointer items-center justify-center"
+      className={`reveal-fullscreen-backdrop ${
+        isDelusion ? "reveal-backdrop-delusion" : "reveal-backdrop-reality"
+      }`}
     >
-      <span className="relative flex items-center justify-center">
-        <span className={isDelusion ? "reveal-delusion-aura" : "reveal-reality-aura"} />
-        {isDelusion &&
-          DELUSION_SPARKLES.map((sparkle, i) => (
-            <span
-              key={i}
-              className="reveal-sparkle absolute text-xl"
-              style={{ ...sparkle.style, animationDelay: sparkle.delay }}
-            >
-              {sparkle.emoji}
-            </span>
-          ))}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={CARD_TYPE_IMAGE[cardType]}
-          alt={CARD_TYPE_LABEL[cardType]}
-          className={`relative w-40 sm:w-56 md:w-64 ${
-            isDelusion ? "reveal-image-delusion" : "reveal-image-reality"
+      <span className="relative flex flex-col items-center justify-center gap-4 sm:gap-6">
+        <span className="relative flex items-center justify-center">
+          <span className={isDelusion ? "reveal-delusion-aura" : "reveal-reality-aura"} />
+          {isDelusion &&
+            DELUSION_SPARKLES.map((sparkle, i) => (
+              <span
+                key={i}
+                className="reveal-sparkle absolute text-2xl sm:text-3xl"
+                style={{ ...sparkle.style, animationDelay: sparkle.delay }}
+              >
+                {sparkle.emoji}
+              </span>
+            ))}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={CARD_TYPE_IMAGE[cardType]}
+            alt={CARD_TYPE_LABEL[cardType]}
+            className={`relative w-56 sm:w-80 md:w-[26rem] ${
+              isDelusion ? "reveal-image-delusion" : "reveal-image-reality"
+            }`}
+          />
+        </span>
+        <span
+          className={`pop-title text-4xl sm:text-5xl md:text-6xl tracking-[0.3em] ${
+            isDelusion ? "reveal-label-delusion" : "reveal-label-reality"
           }`}
-        />
+        >
+          {CARD_TYPE_LABEL[cardType]}
+        </span>
       </span>
-    </button>
+    </button>,
+    document.body,
   );
 }
 
