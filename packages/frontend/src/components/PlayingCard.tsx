@@ -5,9 +5,9 @@ import { STARTING_LIFE, type CardType } from "@battle/shared";
 export type CardSize = "sm" | "md" | "lg" | "custom";
 
 const SIZE_CLASS: Record<CardSize, string> = {
-  sm: "w-12 h-[68px]",
-  md: "w-16 h-[90px]",
-  lg: "w-24 h-[136px]",
+  sm: "w-16 h-[92px] text-[13px]",
+  md: "w-24 h-[136px] text-base",
+  lg: "w-32 h-[180px] text-lg",
   custom: "", // custom指定時は customClass を優先
 };
 
@@ -15,10 +15,10 @@ const SIZE_CLASS: Record<CardSize, string> = {
 export function LifeBar({ life, className = "" }: { life: number; className?: string }) {
   const ratio = Math.max(0, Math.min(1, life / STARTING_LIFE));
   return (
-    <div className={`h-1.5 w-full rounded-full bg-white/10 overflow-hidden ${className}`}>
+    <div className={`h-2.5 sm:h-3 w-full rounded-full bg-black/10 overflow-hidden ${className}`}>
       <div
         className={`h-full rounded-full transition-all duration-500 ${
-          ratio > 0.5 ? "bg-emerald-400" : ratio > 0.2 ? "bg-amber-400" : "bg-red-500"
+          ratio > 0.5 ? "bg-emerald-400" : ratio > 0.2 ? "bg-amber-400" : "bg-rose-500"
         }`}
         style={{ width: `${ratio * 100}%` }}
       />
@@ -30,10 +30,10 @@ export function LifeBar({ life, className = "" }: { life: number; className?: st
 export function GaugeBar({ gauge, className = "" }: { gauge: number; className?: string }) {
   const ratio = Math.max(0, Math.min(1, gauge / 100));
   return (
-    <div className={`h-1.5 w-full rounded-full bg-white/10 overflow-hidden ${className}`}>
+    <div className={`h-2.5 sm:h-3 w-full rounded-full bg-black/10 overflow-hidden ${className}`}>
       <div
         className={`h-full rounded-full transition-all duration-500 ${
-          ratio < 0.5 ? "bg-violet-400" : ratio < 0.8 ? "bg-fuchsia-500" : "bg-red-500"
+          ratio < 0.5 ? "bg-violet-400" : ratio < 0.8 ? "bg-fuchsia-500" : "bg-rose-500"
         }`}
         style={{ width: `${ratio * 100}%` }}
       />
@@ -65,10 +65,10 @@ export function CardBack({
   return (
     <div
       style={style}
-      className={`${sizeClass} rounded-lg border-2 border-white/70 shadow-md bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 flex items-center justify-center relative overflow-hidden ${className}`}
+      className={`${sizeClass} rounded-2xl border-[3px] border-white shadow-[0_5px_0_rgba(150,120,200,0.35)] bg-gradient-to-br from-indigo-300 via-violet-400 to-fuchsia-400 flex items-center justify-center relative overflow-hidden ${className}`}
     >
-      <div className="absolute inset-1 rounded-md border border-white/25" />
-      <span className="text-white/90 font-black text-[0.6em] tracking-widest rotate-[-20deg] select-none">
+      <div className="absolute inset-1.5 rounded-xl border-2 border-white/40" />
+      <span className="text-white font-black text-[0.6em] tracking-widest rotate-[-16deg] select-none drop-shadow">
         ？
       </span>
     </div>
@@ -78,8 +78,8 @@ export function CardBack({
 const CARD_TYPE_LABEL: Record<CardType, string> = { reality: "現実", delusion: "妄想" };
 const CARD_TYPE_ICON: Record<CardType, string> = { reality: "🪨", delusion: "🌀" };
 const CARD_TYPE_GRADIENT: Record<CardType, string> = {
-  reality: "from-sky-400 to-slate-600",
-  delusion: "from-fuchsia-500 to-purple-800",
+  reality: "from-sky-300 via-sky-400 to-blue-400",
+  delusion: "from-fuchsia-300 via-pink-400 to-purple-400",
 };
 
 export function CardTypeFace({
@@ -103,12 +103,12 @@ export function CardTypeFace({
 
   return (
     <div
-      className={`${sizeClass} rounded-lg border-2 border-white shadow-md bg-gradient-to-br ${CARD_TYPE_GRADIENT[type]} text-white flex flex-col items-center justify-center gap-0.5 text-center px-1 select-none ${className}`}
+      className={`${sizeClass} rounded-2xl border-[3px] border-white shadow-[0_5px_0_rgba(150,120,200,0.35)] bg-gradient-to-br ${CARD_TYPE_GRADIENT[type]} text-white flex flex-col items-center justify-center gap-0.5 text-center px-1 select-none ${className}`}
     >
-      <span className="text-[1.3em] leading-none">{CARD_TYPE_ICON[type]}</span>
-      <span className="font-bold text-[0.7em] leading-tight">{label ?? CARD_TYPE_LABEL[type]}</span>
+      <span className="text-[1.3em] leading-none drop-shadow">{CARD_TYPE_ICON[type]}</span>
+      <span className="font-bold text-[0.7em] leading-tight drop-shadow">{label ?? CARD_TYPE_LABEL[type]}</span>
       {damage !== undefined && (
-        <span className="text-[0.65em] leading-none opacity-90">{damage}</span>
+        <span className="text-[0.65em] leading-none opacity-95">{damage}</span>
       )}
     </div>
   );
@@ -129,7 +129,7 @@ export function EmptyCardSlot({
 
   return (
     <div
-      className={`${sizeClass} rounded-lg border-2 border-dashed border-white/30 flex items-center justify-center text-white/40 text-[0.6em] ${className}`}
+      className={`${sizeClass} rounded-2xl border-[3px] border-dashed border-[var(--pop-ink)]/25 flex items-center justify-center text-[var(--pop-ink)]/50 text-[0.6em] ${className}`}
     >
       {label}
     </div>

@@ -30,20 +30,20 @@ export function OpponentPanel({
   revealed: boolean;
 }) {
   return (
-    <div className="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3">
+    <div className="pop-panel w-full px-4 py-3 sm:px-6 sm:py-4">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-white font-semibold text-sm">{name ?? "相手"}</span>
-        <span className="text-white/80 text-xs font-bold">ライフ {life}</span>
+        <span className="font-bold text-sm sm:text-base">{name ?? "相手"}</span>
+        <span className="text-[var(--pop-ink-soft)] text-xs sm:text-sm font-bold">ライフ {life}</span>
       </div>
       <LifeBar life={life} className="mb-1.5" />
       <div className="flex items-center justify-between mb-1">
-        <span className="text-fuchsia-300/80 text-[0.65rem]">妄想ゲージ</span>
-        <span className="text-fuchsia-300/80 text-[0.65rem] font-bold">{gauge}%</span>
+        <span className="text-fuchsia-500 text-xs sm:text-sm font-semibold">妄想ゲージ</span>
+        <span className="text-fuchsia-500 text-xs sm:text-sm font-bold">{gauge}%</span>
       </div>
       <GaugeBar gauge={gauge} className="mb-2" />
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sky-300/80 text-[0.6rem]">妄想成功（見破られず）</span>
-        <span className="text-sky-300/80 text-[0.6rem] font-bold">
+        <span className="text-sky-500 text-xs sm:text-sm font-semibold">妄想成功（見破られず）</span>
+        <span className="text-sky-500 text-xs sm:text-sm font-bold">
           {delusionSuccessCount}/{DELUSION_SUCCESS_WIN_COUNT}
         </span>
       </div>
@@ -66,24 +66,24 @@ export function OpponentPanel({
                 Math.abs(outcome.gaugeDelta) ||
                 undefined
               }
-              size="sm"
+              size="md"
               revealed={revealed}
             />
             <div
-              className={`text-xs font-bold ${revealed ? "card-pop-in" : "opacity-0"} ${
-                outcome.wasCaught ? "text-emerald-400" : "text-red-400"
+              className={`text-xs sm:text-sm font-bold ${revealed ? "card-pop-in" : "opacity-0"} ${
+                outcome.wasCaught ? "text-emerald-500" : "text-rose-500"
               }`}
             >
               {outcome.wasCaught ? "🎯 見破った！" : "😱 見破れなかった…"}
             </div>
           </div>
         ) : (
-          <div className={`text-xs ${revealed ? "card-pop-in" : "opacity-0"}`}>
-            <p className="text-white/70 mb-1">
+          <div className={`text-xs sm:text-sm ${revealed ? "card-pop-in" : "opacity-0"}`}>
+            <p className="text-[var(--pop-ink-soft)] mb-1">
               {name ?? "相手"}の予想：「{CARD_TYPE_LABEL[outcome.defense.prediction]}」
             </p>
             <p
-              className={`font-bold ${outcome.wasCaught ? "text-red-400" : "text-emerald-400"}`}
+              className={`font-bold ${outcome.wasCaught ? "text-rose-500" : "text-emerald-500"}`}
             >
               {outcome.wasCaught ? "😱 見破られた…" : "🎉 見破られなかった！"}
             </p>
@@ -92,17 +92,17 @@ export function OpponentPanel({
       ) : isAttackerNow && pendingDamage !== null ? (
         <div className="flex items-center gap-3">
           <div className="relative">
-            <CardBack size="sm" />
-            <span className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[0.6rem] font-bold rounded px-1">
+            <CardBack size="md" />
+            <span className="absolute -bottom-1 -right-1 bg-[var(--pop-ink)] text-white text-xs font-bold rounded-full px-2 py-0.5 shadow">
               {pendingDamage}
             </span>
           </div>
-          <span className="text-white/60 text-xs">攻撃してきた…正体不明</span>
+          <span className="text-[var(--pop-ink-soft)] text-xs sm:text-sm">攻撃してきた…正体不明</span>
         </div>
       ) : (
         <div className="flex items-center gap-3">
-          <CardBack size="sm" className="card-back-idle shadow-lg" />
-          <span className="text-white/60 text-xs animate-pulse whitespace-nowrap">
+          <CardBack size="md" className="card-back-idle" />
+          <span className="text-[var(--pop-ink-soft)] text-xs sm:text-sm animate-pulse whitespace-nowrap">
             {isAttackerNow ? "攻撃を選んでいます…" : "見破る準備をしています…"}
           </span>
         </div>

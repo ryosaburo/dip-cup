@@ -25,29 +25,29 @@ export default function TopPage() {
 
   return (
     <main className="flex-1 flex items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">妄想ジャッジメント</h1>
-          <p className="text-sm text-neutral-500">
-            妄想か現実か究極の心理戦ここに開幕...
-          </p>
+          <h1 className="pop-title text-3xl text-[var(--pop-ink)] drop-shadow-sm">妄想ジャッジメント</h1>
+          <p className="text-sm text-[var(--pop-ink-soft)]">妄想か現実か究極の心理戦ここに開幕...</p>
         </div>
 
-        <AuthPanel />
+        <div className="pop-panel p-4">
+          <AuthPanel />
+        </div>
 
         {state.errorMessage && (
-          <div className="rounded-md bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 flex justify-between items-center">
+          <div className="rounded-2xl bg-rose-50 border-2 border-rose-200 text-rose-600 text-sm px-4 py-2 flex justify-between items-center">
             <span>{state.errorMessage}</span>
-            <button onClick={clearError} className="text-red-500 font-bold">
+            <button onClick={clearError} className="text-rose-500 font-bold">
               ×
             </button>
           </div>
         )}
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium">プレイヤー名</label>
+        <div className="pop-panel p-4 space-y-2">
+          <label className="block text-sm font-bold text-[var(--pop-ink)]">プレイヤー名</label>
           <input
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full rounded-xl border-2 border-violet-200 bg-white px-3 py-2 focus:outline-none focus:border-violet-400"
             value={playerName}
             onChange={(e) => setPlayerNameInput(e.target.value)}
             placeholder="名前を入力"
@@ -55,21 +55,21 @@ export default function TopPage() {
           />
         </div>
 
-        <section className="rounded-lg border p-4 space-y-3">
-          <h2 className="font-semibold">ルームを作成する</h2>
+        <section className="pop-panel p-4 space-y-3">
+          <h2 className="font-bold text-[var(--pop-ink)]">ルームを作成する</h2>
           <button
             disabled={!playerName.trim()}
             onClick={() => createRoom(playerName.trim(), session?.access_token)}
-            className="w-full rounded-md bg-black text-white py-2 disabled:opacity-40"
+            className="pop-bounce w-full rounded-full bg-gradient-to-r from-sky-300 to-blue-400 text-white font-bold py-2.5 shadow-[0_5px_0_rgba(150,120,200,0.35)] disabled:opacity-40 disabled:shadow-none"
           >
             ルーム作成
           </button>
         </section>
 
-        <section className="rounded-lg border p-4 space-y-3">
-          <h2 className="font-semibold">コードで入室する</h2>
+        <section className="pop-panel p-4 space-y-3">
+          <h2 className="font-bold text-[var(--pop-ink)]">コードで入室する</h2>
           <input
-            className="w-full border rounded-md px-3 py-2 tracking-widest uppercase"
+            className="w-full rounded-xl border-2 border-violet-200 bg-white px-3 py-2 tracking-widest uppercase focus:outline-none focus:border-violet-400"
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value)}
             placeholder="ルームコード"
@@ -78,7 +78,7 @@ export default function TopPage() {
           <button
             disabled={!playerName.trim() || !joinCode.trim()}
             onClick={() => joinRoom(joinCode.trim(), playerName.trim(), session?.access_token)}
-            className="w-full rounded-md border py-2 disabled:opacity-40"
+            className="pop-bounce w-full rounded-full bg-gradient-to-r from-fuchsia-300 to-purple-400 text-white font-bold py-2.5 shadow-[0_5px_0_rgba(150,120,200,0.35)] disabled:opacity-40 disabled:shadow-none"
           >
             入室する
           </button>

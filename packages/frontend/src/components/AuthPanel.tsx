@@ -16,11 +16,11 @@ export function AuthPanel() {
 
   if (session) {
     return (
-      <div className="rounded-lg border p-3 flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between text-sm text-[var(--pop-ink)]">
         <span>
-          ログイン中：<span className="font-semibold">{displayName ?? session.user.email}</span>
+          ログイン中：<span className="font-bold">{displayName ?? session.user.email}</span>
         </span>
-        <button onClick={() => signOut()} className="text-neutral-500 underline">
+        <button onClick={() => signOut()} className="text-[var(--pop-ink-soft)] underline">
           ログアウト
         </button>
       </div>
@@ -41,17 +41,25 @@ export function AuthPanel() {
   };
 
   return (
-    <div className="rounded-lg border p-4 space-y-3 text-sm">
+    <div className="space-y-3 text-sm text-[var(--pop-ink)]">
       <div className="flex gap-2">
         <button
           onClick={() => setMode("login")}
-          className={`flex-1 rounded-md py-1.5 ${mode === "login" ? "bg-black text-white" : "border"}`}
+          className={`pop-bounce flex-1 rounded-full py-1.5 font-bold ${
+            mode === "login"
+              ? "bg-[var(--pop-ink)] text-white"
+              : "border-2 border-[var(--pop-ink)]/20 text-[var(--pop-ink-soft)]"
+          }`}
         >
           ログイン
         </button>
         <button
           onClick={() => setMode("signup")}
-          className={`flex-1 rounded-md py-1.5 ${mode === "signup" ? "bg-black text-white" : "border"}`}
+          className={`pop-bounce flex-1 rounded-full py-1.5 font-bold ${
+            mode === "signup"
+              ? "bg-[var(--pop-ink)] text-white"
+              : "border-2 border-[var(--pop-ink)]/20 text-[var(--pop-ink-soft)]"
+          }`}
         >
           新規登録
         </button>
@@ -59,37 +67,37 @@ export function AuthPanel() {
 
       {mode === "signup" && (
         <input
-          className="w-full border rounded-md px-3 py-2"
+          className="w-full rounded-xl border-2 border-violet-200 bg-white px-3 py-2 focus:outline-none focus:border-violet-400"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="表示名（未入力ならメールの@より前を使用）"
         />
       )}
       <input
-        className="w-full border rounded-md px-3 py-2"
+        className="w-full rounded-xl border-2 border-violet-200 bg-white px-3 py-2 focus:outline-none focus:border-violet-400"
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="メールアドレス"
       />
       <input
-        className="w-full border rounded-md px-3 py-2"
+        className="w-full rounded-xl border-2 border-violet-200 bg-white px-3 py-2 focus:outline-none focus:border-violet-400"
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="パスワード（6文字以上）"
       />
 
-      {message && <p className="text-red-600">{message}</p>}
+      {message && <p className="text-rose-500">{message}</p>}
 
       <button
         disabled={!email.trim() || password.length < 6 || submitting}
         onClick={handleSubmit}
-        className="w-full rounded-md border py-2 disabled:opacity-40"
+        className="pop-bounce w-full rounded-full bg-gradient-to-r from-fuchsia-400 to-violet-400 text-white font-bold py-2 shadow-[0_5px_0_rgba(150,120,200,0.35)] disabled:opacity-40 disabled:shadow-none"
       >
         {mode === "signup" ? "登録する" : "ログインする"}
       </button>
-      <p className="text-neutral-400">ログインしなくてもゲストとしてプレイできます。</p>
+      <p className="text-[var(--pop-ink-soft)]">ログインしなくてもゲストとしてプレイできます。</p>
     </div>
   );
 }
