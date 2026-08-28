@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   REALITY_CARD_CONFIG,
+  STARTING_LIFE, 
   type AttackSelection,
   type CardType,
   type DefenseSelection,
@@ -223,7 +224,10 @@ export function GameField({
       }`}
     >
       {/* 敗北時にとある風ガラス粉砕エフェクトを発火 */}
-      <CrackOverlay active={isDefeat} />
+      <CrackOverlay
+        active={isDefeat}
+        lifeRatio={yourLife / STARTING_LIFE}
+      />
 
       <div className="relative z-10 text-center text-[var(--pop-ink-soft)] text-xs sm:text-sm">
         ターン {turnNumber}
