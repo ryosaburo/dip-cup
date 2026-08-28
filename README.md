@@ -1,4 +1,4 @@
-# 妄想ポーカー
+# 妄想ジャッチメント
 
 `hackathon_idea.md` のゲーム仕様を `tech_stack.md` の技術構成（Next.js フロントエンド／Socket.io WSサーバーの分離構成）で実装したもの。
 
