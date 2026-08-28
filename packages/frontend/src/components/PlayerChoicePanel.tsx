@@ -32,7 +32,6 @@ function StatusHeader({
   name: string | null;
   life: number;
   gauge: number;
-  /** 見破られずに成功させた妄想カードの累計回数 */
   delusionSuccessCount: number;
 }) {
   return (
@@ -78,10 +77,8 @@ export function PlayerChoicePanel({
   opponentName: string | null;
   life: number;
   gauge: number;
-  /** 見破られずに成功させた妄想カードの累計回数 */
   delusionSuccessCount: number;
   phase: GamePhase;
-  /** ランダムに配られた、このターンに選べる現実カード */
   dealtRealityCards: RealityCardId[];
   pendingDamage: number | null;
   onSubmitAttack: (attack: AttackSelection) => void;
@@ -99,11 +96,19 @@ export function PlayerChoicePanel({
   const [lifeDrainAmount, setLifeDrainAmount] = useState(
     Math.round((LIFE_DRAIN_MIN + LIFE_DRAIN_MAX) / 2),
   );
+  // ★ AI自由入力用テキスト
+  const [customDelusionText, setCustomDelusionText] = useState("");
 
   function handleSubmitAttack() {
     if (!choice) return;
     if (choice.cardType === "delusion") {
-      onSubmitAttack({ cardType: "delusion", delusionEffect, delusionDamage });
+      onSubmitAttack({
+        cardType: "delusion",
+        delusionEffect,
+        delusionDamage,
+        // ★ テキストがある場合は Gemini で上書き解析させる
+        rawDelusionText: customDelusionText.trim() ? customDelusionText.trim() : undefined,
+      });
     } else if (choice.realityCardId === "life_drain") {
       onSubmitAttack({ cardType: "reality", realityCardId: "life_drain", realityAmount: lifeDrainAmount });
     } else {
@@ -115,7 +120,8 @@ export function PlayerChoicePanel({
     const label =
       outcome.attack.cardType === "reality" && outcome.attack.realityCardId
         ? REALITY_CARD_CONFIG[outcome.attack.realityCardId].label
-        : undefined;
+        : outcome.attack.delusionCardName || undefined;
+
     const effectiveDamage =
       outcome.damageDealt ||
       outcome.selfDamage ||
@@ -142,6 +148,11 @@ export function PlayerChoicePanel({
               }`}
             >
               {outcome.wasCaught ? "😱 見破られた…" : "🎉 見破られなかった！"}
+              {outcome.attack.flavorText && (
+                <p className="text-[0.65rem] text-white/70 font-normal mt-1 italic">
+                  「{outcome.attack.flavorText}」
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -154,6 +165,11 @@ export function PlayerChoicePanel({
             >
               {outcome.wasCaught ? "🎯 見破った！" : "😱 見破れなかった…"}
             </p>
+            {outcome.attack.flavorText && (
+              <p className="text-[0.65rem] text-white/70 font-normal mt-1 italic">
+                相手の決め台詞：「{outcome.attack.flavorText}」
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -167,9 +183,9 @@ export function PlayerChoicePanel({
 
         <div className="space-y-1.5">
           <p className="text-white/60 text-[0.65rem]">
-            あなたの攻撃ターンです。ランダムに配られた現実カードから1枚、または妄想カードを選んでください（見破られると効果は自分に跳ね返ります）
+            あなたの攻撃ターンです。現実カードから1枚、または妄想カードを選んでください。
           </p>
-          <p className="text-white/40 text-[0.6rem]">現実カード（今ターンだけ選べる3種）</p>
+          <p className="text-white/40 text-[0.6rem]">現実カード（今ターン選べる3種）</p>
           <div className="grid grid-cols-3 gap-1.5">
             {dealtRealityCards.map((id) => {
               const config = REALITY_CARD_CONFIG[id];
@@ -195,7 +211,7 @@ export function PlayerChoicePanel({
             })}
           </div>
 
-          <p className="text-white/40 text-[0.6rem] pt-1">妄想カード</p>
+          <p className="text-white/40 text-[0.6rem] pt-1">妄想カード（AI生成・自由入力）</p>
           <button
             type="button"
             onClick={() => setChoice({ cardType: "delusion" })}
@@ -204,9 +220,11 @@ export function PlayerChoicePanel({
             }`}
           >
             <div className="w-24 h-[72px] rounded-lg border-2 border-white shadow-md bg-gradient-to-br from-fuchsia-500 to-purple-800 text-white flex flex-col items-center justify-center gap-0.5">
-              <span className="text-[1.1em]">{delusionEffect === "heal" ? "💚" : "🌀"}</span>
-              <span className="font-bold text-xs">妄想</span>
-              <span className="text-[0.6em] opacity-90">自由{delusionDamage}</span>
+              <span className="text-[1.1em]">✨</span>
+              <span className="font-bold text-xs">妄想(AI)</span>
+              <span className="text-[0.6em] opacity-90">
+                {customDelusionText.trim() ? "自由記述" : `手動${delusionDamage}`}
+              </span>
             </div>
           </button>
         </div>
@@ -225,55 +243,44 @@ export function PlayerChoicePanel({
               onChange={(e) => setLifeDrainAmount(Number(e.target.value))}
               className="w-full accent-sky-400"
             />
-            <p className="text-[0.6rem] text-white/40">
-              見破られなければこの量だけ相手にダメージを与え、同じ量だけ自分が回復する／見破られると回復できず、この量の反動ダメージが自分に入る
-            </p>
           </div>
         )}
 
         {choice?.cardType === "delusion" && (
-          <div className="space-y-1">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setDelusionEffect("damage")}
-                className={`flex-1 rounded-md py-1 text-[0.65rem] font-semibold border transition-colors ${
-                  delusionEffect === "damage"
-                    ? "bg-white text-black border-white"
-                    : "border-white/30 text-white/70"
-                }`}
-              >
-                ダメージ
-              </button>
-              <button
-                type="button"
-                onClick={() => setDelusionEffect("heal")}
-                className={`flex-1 rounded-md py-1 text-[0.65rem] font-semibold border transition-colors ${
-                  delusionEffect === "heal"
-                    ? "bg-white text-black border-white"
-                    : "border-white/30 text-white/70"
-                }`}
-              >
-                回復
-              </button>
+          <div className="space-y-2 rounded-lg bg-white/5 p-2.5 border border-white/10">
+            <div>
+              <label className="block text-[0.65rem] font-bold text-fuchsia-300 mb-1">
+                ✨ 妄想テキスト自由入力（Gemini AIが自動解析）
+              </label>
+              <textarea
+                value={customDelusionText}
+                onChange={(e) => setCustomDelusionText(e.target.value)}
+                placeholder="例: 全宇宙の力を宿した黒炎弾！ 80ダメージ"
+                rows={2}
+                maxLength={100}
+                className="w-full bg-black/40 border border-white/20 rounded-md p-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-fuchsia-400"
+              />
+              <p className="text-[0.55rem] text-white/50 mt-0.5">
+                ※ 入力すると AI が技名・ダメージ（0〜100）・決め台詞を自動判定します。
+              </p>
             </div>
-            <div className="flex justify-between text-[0.65rem] text-white/60">
-              <span>{delusionEffect === "heal" ? "申告回復量" : "申告ダメージ量"}</span>
-              <span className="font-bold text-fuchsia-300">{delusionDamage}</span>
-            </div>
-            <input
-              type="range"
-              min={DELUSION_DAMAGE_MIN}
-              max={DELUSION_DAMAGE_MAX}
-              value={delusionDamage}
-              onChange={(e) => setDelusionDamage(Number(e.target.value))}
-              className="w-full accent-fuchsia-500"
-            />
-            <p className="text-[0.6rem] text-white/40">
-              {delusionEffect === "heal"
-                ? "見破られなければ自分がこの量だけ回復する／見破られると自分は回復できず、見破った相手がこの量だけ回復する（自分の妄想ゲージはこの量だけ上がる）"
-                : "見破られなければこの量がそのまま通る／見破られると自分に反動＋この量だけ妄想ゲージが上がる"}
-            </p>
+
+            {!customDelusionText.trim() && (
+              <div className="space-y-1.5 pt-1 border-t border-white/10">
+                <div className="flex justify-between text-[0.65rem] text-white/60">
+                  <span>手動申告ダメージ量</span>
+                  <span className="font-bold text-fuchsia-300">{delusionDamage}</span>
+                </div>
+                <input
+                  type="range"
+                  min={DELUSION_DAMAGE_MIN}
+                  max={DELUSION_DAMAGE_MAX}
+                  value={delusionDamage}
+                  onChange={(e) => setDelusionDamage(Number(e.target.value))}
+                  className="w-full accent-fuchsia-500"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -320,7 +327,6 @@ export function PlayerChoicePanel({
     );
   }
 
-  // waiting_attack / waiting_defense / waiting_for_result
   const waitingMessage =
     phase === "waiting_attack"
       ? `${displayOpponentName}の攻撃を待っています…`

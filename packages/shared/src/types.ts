@@ -31,6 +31,9 @@ export interface AttackSelection {
   delusionEffect?: DelusionEffect;
   /** 妄想カードを選んだ場合のみ、その場で申告する量（ダメージ量または回復量） */
   delusionDamage?: number;
+  rawDelusionText?: string;
+  delusionCardName?: string;
+  flavorText?: string;
 }
 
 /** ターン終了時ごとに発生する継続効果（「疼く傷跡」「緩やかな回復」など） */

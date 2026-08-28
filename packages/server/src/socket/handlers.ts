@@ -3,12 +3,14 @@ import {
   evaluateMatchOutcome,
   getAttackMagnitude,
   resolveTurn,
+  type AttackSelection,
   type ClientToServerEvents,
   type DefenseSelection,
   type ServerToClientEvents,
 } from "@battle/shared";
 import { RoomManager, type Room } from "../rooms/RoomManager.js";
 import { supabaseAdmin, verifyAccessToken } from "../lib/supabase.js";
+import { parseDelusionWithAI } from "../lib/aiParser.js";
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -61,19 +63,35 @@ export function registerHandlers(io: TypedServer, roomManager: RoomManager) {
       }
     });
 
-    socket.on("submit_attack", (attack) => {
-      try {
-        const room = roomManager.submitAttack(socket.id, attack);
-        const attackerGauge = room.delusionGauges[room.attackerId] ?? 0;
-        io.to(room.roomCode).emit("attack_submitted", {
-          damage: getAttackMagnitude(attack, attackerGauge),
-          attackerId: room.attackerId,
-          turnNumber: room.turnNumber,
-        });
-      } catch (err) {
-        socket.emit("error", { message: (err as Error).message });
-      }
+    // 攻撃処理（妄想カードの場合は Gemini AI でテキスト解析）
+    socket.on("submit_attack", async (attack: AttackSelection) => {
+  try {
+    let finalAttack = { ...attack };
+
+    // 妄想カードで自由テキストがある場合、Geminiで解析
+    if (attack.cardType === "delusion" && attack.rawDelusionText) {
+      const parsed = await parseDelusionWithAI(attack.rawDelusionText);
+      finalAttack = {
+        ...finalAttack,
+        delusionDamage: parsed.declaredDamage,
+        delusionCardName: parsed.cardName,
+        flavorText: parsed.flavorText,
+      };
+    }
+
+    const room = roomManager.submitAttack(socket.id, finalAttack);
+    const attackerGauge = room.delusionGauges[room.attackerId] ?? 0;
+
+    // 防御側へ解析結果の申告ダメージを通知
+    io.to(room.roomCode).emit("attack_submitted", {
+      damage: getAttackMagnitude(finalAttack, attackerGauge),
+      attackerId: room.attackerId,
+      turnNumber: room.turnNumber,
     });
+  } catch (err) {
+    socket.emit("error", { message: (err as Error).message });
+  }
+});
 
     socket.on("submit_defense", (defense) => {
       try {

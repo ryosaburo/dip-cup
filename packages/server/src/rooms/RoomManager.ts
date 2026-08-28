@@ -192,15 +192,14 @@ function validateAttack(attack: AttackSelection, dealtRealityCards: RealityCardI
       throw new Error("妄想カードの効果種別（ダメージ／回復）を指定してください");
     }
     const damage = attack.delusionDamage;
+    // ★ 0 〜 100 の範囲に設定
     if (
       typeof damage !== "number" ||
       !Number.isInteger(damage) ||
-      damage < DELUSION_DAMAGE_MIN ||
-      damage > DELUSION_DAMAGE_MAX
+      damage < 0 ||
+      damage > 100
     ) {
-      throw new Error(
-        `妄想カードの申告量は${DELUSION_DAMAGE_MIN}〜${DELUSION_DAMAGE_MAX}の整数で指定してください`,
-      );
+      throw new Error("妄想カードの申告量は0〜100の整数で指定してください");
     }
   }
 }
