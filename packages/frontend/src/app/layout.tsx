@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AIエージェント学習対戦",
-  description: "「現実」か「妄想」かを読み合い、見破り／見破られで攻防するライフ制2人対戦ゲーム",
+  title: "妄想ジャッジメント",
+  description: "妄想か現実か究極の心理戦ここに開幕",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
