@@ -1,8 +1,10 @@
+// packages/frontend/src/app/room/[roomId]/page.tsx
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
 import { useGameSocket } from "@/context/GameSocketProvider";
 import { GameField } from "@/components/GameField";
+import { CrackOverlay } from "@/components/CrackOverlay"; 
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -46,50 +48,58 @@ export default function RoomPage() {
     );
   }
 
+  // ★ 敗北時のリザルト画面
   if (state.phase === "gameover" && state.gameOverResult && state.playerId) {
     const isDraw = state.gameOverResult.winnerId === null;
     const won = state.gameOverResult.winnerId === state.playerId;
+    const isDefeat = !isDraw && !won; // 自分が負けた判定
+
     return (
-      <Centered>
-        {!isDraw && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={won ? "/win.jpg" : "/lose.jpg"}
-            alt={won ? "勝利" : "敗北"}
-            className={`max-w-[90vw] max-h-[55vh] w-auto h-auto rounded-2xl border-[3px] border-white shadow-[0_8px_0_rgba(150,120,200,0.35)] ${
-              won ? "pop-win-in" : "shatter-to-reality"
-            }`}
-          />
-        )}
-        <h1 className="pop-title text-3xl text-[var(--pop-ink)]">
-          {isDraw ? "引き分け" : won ? "勝利！" : "敗北…"}
-        </h1>
-        <p className="text-[var(--pop-ink)]">
-          最終ライフ {state.gameOverResult.lifeTotals[state.playerId] ?? 0} -{" "}
-          {Object.entries(state.gameOverResult.lifeTotals).find(
-            ([id]) => id !== state.playerId,
-          )?.[1] ?? 0}
-        </p>
-        <p className="text-sm text-[var(--pop-ink-soft)]">
-          最終妄想ゲージ {state.gameOverResult.delusionGauges[state.playerId] ?? 0}% -{" "}
-          {Object.entries(state.gameOverResult.delusionGauges).find(
-            ([id]) => id !== state.playerId,
-          )?.[1] ?? 0}
-          %
-        </p>
-        <p className="text-sm text-[var(--pop-ink-soft)]">
-          妄想成功回数 {state.gameOverResult.delusionSuccessCounts[state.playerId] ?? 0} -{" "}
-          {Object.entries(state.gameOverResult.delusionSuccessCounts).find(
-            ([id]) => id !== state.playerId,
-          )?.[1] ?? 0}
-        </p>
-        <button
-          onClick={backToTop}
-          className="pop-bounce mt-2 rounded-full bg-gradient-to-r from-fuchsia-400 to-violet-400 text-white font-bold px-6 py-2.5 shadow-[0_5px_0_rgba(150,120,200,0.35)]"
-        >
-          トップへ戻る
-        </button>
-      </Centered>
+      <>
+        {/* ★ 敗北時に画面全体をとある風に粉砕 */}
+        <CrackOverlay active={isDefeat} />
+
+        <Centered>
+          {!isDraw && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={won ? "/win.jpg" : "/lose.jpg"}
+              alt={won ? "勝利" : "敗北"}
+              className={`max-w-[90vw] max-h-[55vh] w-auto h-auto rounded-2xl border-[3px] border-white shadow-[0_8px_0_rgba(150,120,200,0.35)] ${
+                won ? "pop-win-in" : "shatter-to-reality"
+              }`}
+            />
+          )}
+          <h1 className="pop-title text-3xl text-[var(--pop-ink)]">
+            {isDraw ? "引き分け" : won ? "勝利！" : "敗北…"}
+          </h1>
+          <p className="text-[var(--pop-ink)]">
+            最終ライフ {state.gameOverResult.lifeTotals[state.playerId] ?? 0} -{" "}
+            {Object.entries(state.gameOverResult.lifeTotals).find(
+              ([id]) => id !== state.playerId,
+            )?.[1] ?? 0}
+          </p>
+          <p className="text-sm text-[var(--pop-ink-soft)]">
+            最終妄想ゲージ {state.gameOverResult.delusionGauges[state.playerId] ?? 0}% -{" "}
+            {Object.entries(state.gameOverResult.delusionGauges).find(
+              ([id]) => id !== state.playerId,
+            )?.[1] ?? 0}
+            %
+          </p>
+          <p className="text-sm text-[var(--pop-ink-soft)]">
+            妄想成功回数 {state.gameOverResult.delusionSuccessCounts[state.playerId] ?? 0} -{" "}
+            {Object.entries(state.gameOverResult.delusionSuccessCounts).find(
+              ([id]) => id !== state.playerId,
+            )?.[1] ?? 0}
+          </p>
+          <button
+            onClick={backToTop}
+            className="pop-bounce mt-2 rounded-full bg-gradient-to-r from-fuchsia-400 to-violet-400 text-white font-bold px-6 py-2.5 shadow-[0_5px_0_rgba(150,120,200,0.35)]"
+          >
+            トップへ戻る
+          </button>
+        </Centered>
+      </>
     );
   }
 
