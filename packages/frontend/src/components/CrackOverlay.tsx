@@ -15,7 +15,6 @@ interface Shard {
   color: string;
 }
 
-// とある風アイキャッチ破砕音（Web Audio API・高周波ノイズ＋金属共鳴）
 function playIndexShatterSE() {
   try {
     const AudioContextClass =
@@ -23,7 +22,6 @@ function playIndexShatterSE() {
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const ctx = new AudioContextClass();
 
-    // 1. ガラス粉砕の衝撃ホワイトノイズ
     const bufferSize = ctx.sampleRate * 0.35;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -48,7 +46,6 @@ function playIndexShatterSE() {
     gain.connect(ctx.destination);
     noise.start();
 
-    // 2. 金属的なキーンという共鳴余韻
     const osc = ctx.createOscillator();
     const oscGain = ctx.createGain();
     osc.type = "sine";
@@ -63,16 +60,11 @@ function playIndexShatterSE() {
     osc.start();
     osc.stop(ctx.currentTime + 0.45);
   } catch {
-    // ユーザー操作前の自動再生ブロック時はスキップ
+    // skip
   }
 }
 
-interface CrackOverlayProps {
-  active: boolean;
-  onFinished?: () => void;
-}
-
-export function CrackOverlay({ active, onFinished }: CrackOverlayProps) {
+export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -90,7 +82,6 @@ export function CrackOverlay({ active, onFinished }: CrackOverlayProps) {
     const centerX = width / 2;
     const centerY = height / 2;
 
-    // 中心から放射状に広がる鋭角な破片（とある風）を生成
     const shards: Shard[] = [];
     const rings = 4;
     const sectors = 20;
@@ -128,7 +119,7 @@ export function CrackOverlay({ active, onFinished }: CrackOverlayProps) {
           const triCenterY = (tri[0][1] + tri[1][1] + tri[2][1]) / 3;
 
           const angle = Math.atan2(triCenterY - centerY, triCenterX - centerX);
-          const speed = Math.random() * 18 + 12;
+          const speed = Math.random() * 20 + 12;
 
           const relPoints: [number, number][] = tri.map(([px, py]) => [
             px - triCenterX,
@@ -165,8 +156,7 @@ export function CrackOverlay({ active, onFinished }: CrackOverlayProps) {
       const elapsed = (time - startTime) / 1000;
       ctx.clearRect(0, 0, width, height);
 
-      // 開始直後の一瞬（約0.06秒）の白フラッシュ
-      if (elapsed < 0.06) {
+      if (elapsed < 0.08) {
         ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
         ctx.fillRect(0, 0, width, height);
       }
@@ -176,7 +166,7 @@ export function CrackOverlay({ active, onFinished }: CrackOverlayProps) {
       for (const s of shards) {
         s.x += s.vx;
         s.y += s.vy;
-        s.vy += 0.4; // 重力加速度
+        s.vy += 0.45;
         s.vx *= 0.98;
         s.rotation += s.vRot;
 
@@ -200,7 +190,6 @@ export function CrackOverlay({ active, onFinished }: CrackOverlayProps) {
           ctx.fillStyle = s.color;
           ctx.fill();
 
-          // ガラスエッジの発光ライン
           ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
           ctx.lineWidth = 1.5;
           ctx.stroke();
@@ -209,10 +198,8 @@ export function CrackOverlay({ active, onFinished }: CrackOverlayProps) {
         }
       }
 
-      if (alive > 0 && elapsed < 2.2) {
+      if (alive > 0 && elapsed < 2.5) {
         animationId = requestAnimationFrame(animate);
-      } else if (onFinished) {
-        onFinished();
       }
     };
 
@@ -221,14 +208,14 @@ export function CrackOverlay({ active, onFinished }: CrackOverlayProps) {
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [active, onFinished]);
+  }, [active]);
 
   if (!active) return null;
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 z-50 pointer-events-none"
+      style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", zIndex: 9999, pointerEvents: "none" }}
     />
   );
 }
