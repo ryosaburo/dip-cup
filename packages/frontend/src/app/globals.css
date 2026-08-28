@@ -378,22 +378,6 @@ body {
   animation: reveal-backdrop-in 0.35s ease-out both;
 }
 
-.reveal-label-reality {
-  color: #e7e7ec;
-  text-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.5),
-    0 12px 22px rgba(0, 0, 0, 0.6);
-  animation: reveal-reality-pop 0.7s cubic-bezier(0.36, 0, 0.66, -0.02) both;
-}
-
-.reveal-label-delusion {
-  color: #fff2fb;
-  text-shadow:
-    0 2px 0 rgba(168, 85, 247, 0.5),
-    0 0 24px rgba(236, 72, 153, 0.75);
-  animation: reveal-delusion-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
 /* --- ふわふわポップなステージ背景 --- */
 
 .pop-stage {
