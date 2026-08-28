@@ -204,6 +204,11 @@ export function GameField({
   const displayPlayerName = playerName ?? "自分";
   const displayOpponentName = opponentName ?? "相手";
 
+  // 敗北条件の判定（ライフが0以下、または妄想が見破られて自滅した時）
+  const isDefeat =
+    yourLife <= 0 ||
+    (isResult && lastTurnResult?.instantDefeat === true && iWasAttacker === true);
+
   // 現在進行中のターンでの役割（結果表示中は直前ターンの役割をそのまま使う）
   const iAmAttackerNow =
     phase === "my_attack" || phase === "waiting_defense"
@@ -218,7 +223,9 @@ export function GameField({
         yourLife <= 0 ? "shatter-impact" : ""
       }`}
     >
-      <CrackOverlay lifeRatio={yourLife / STARTING_LIFE} />
+      {/* 敗北時にとある風ガラス粉砕エフェクトを発火 */}
+      <CrackOverlay active={isDefeat} />
+
       <div className="relative z-10 text-center text-[var(--pop-ink-soft)] text-xs sm:text-sm">
         ターン {turnNumber}
       </div>
@@ -236,60 +243,71 @@ export function GameField({
             />
 
             <div className="relative z-10 space-y-3 sm:space-y-4">
-            <OpponentPanel
-              name={opponentName}
-              life={opponentLife}
-              gauge={opponentGauge}
-              delusionSuccessCount={opponentDelusionSuccessCount}
-              isAttackerNow={iAmAttackerNow === null ? null : !iAmAttackerNow}
-              pendingDamage={iAmAttackerNow === false ? pendingDamage : null}
-              outcome={isResult ? lastTurnResult : null}
-              wasAttackerInOutcome={iWasAttacker === null ? false : !iWasAttacker}
-              revealed={revealed}
-            />
+              <OpponentPanel
+                name={opponentName}
+                life={opponentLife}
+                gauge={opponentGauge}
+                delusionSuccessCount={opponentDelusionSuccessCount}
+                isAttackerNow={iAmAttackerNow === null ? null : !iAmAttackerNow}
+                pendingDamage={iAmAttackerNow === false ? pendingDamage : null}
+                outcome={isResult ? lastTurnResult : null}
+                wasAttackerInOutcome={iWasAttacker === null ? false : !iWasAttacker}
+                revealed={revealed}
+              />
 
-            <div className="flex items-center justify-center py-1 min-h-[2.5rem]">
-              {(phase === "my_attack" || phase === "waiting_attack") && (
-                <span className="pop-title text-[var(--pop-ink-soft)] text-xs sm:text-sm tracking-[0.4em]">
-                  VS
-                </span>
-              )}
-              {isResult && (
-                <div className="banner-pop text-center">
-                  <p className="text-[var(--pop-ink)] font-bold text-xs sm:text-sm md:text-base">
-                    {describeForViewer(lastTurnResult!, iWasAttacker!, displayPlayerName, displayOpponentName)}
-                  </p>
-                  <DotLine amount={lastTurnResult!.dotDamage[playerId] ?? 0} who={displayPlayerName} />
-                  {opponentId && (
-                    <DotLine amount={lastTurnResult!.dotDamage[opponentId] ?? 0} who={displayOpponentName} />
-                  )}
-                  <button
-                    disabled={!nextTurnReady}
-                    onClick={onNextTurn}
-                    className="pop-bounce mt-3 rounded-full bg-gradient-to-r from-fuchsia-400 to-violet-400 text-white px-6 py-2 sm:py-2.5 text-sm sm:text-base font-bold shadow-[0_5px_0_rgba(150,120,200,0.35)] disabled:opacity-40 disabled:shadow-none"
-                  >
-                    {nextTurnReady ? "次のターンへ" : "サーバー処理中…"}
-                  </button>
-                </div>
-              )}
-            </div>
+              <div className="flex items-center justify-center py-1 min-h-[2.5rem]">
+                {(phase === "my_attack" || phase === "waiting_attack") && (
+                  <span className="pop-title text-[var(--pop-ink-soft)] text-xs sm:text-sm tracking-[0.4em]">
+                    VS
+                  </span>
+                )}
+                {isResult && (
+                  <div className="banner-pop text-center">
+                    <p className="text-[var(--pop-ink)] font-bold text-xs sm:text-sm md:text-base">
+                      {describeForViewer(
+                        lastTurnResult!,
+                        iWasAttacker!,
+                        displayPlayerName,
+                        displayOpponentName,
+                      )}
+                    </p>
+                    <DotLine
+                      amount={lastTurnResult!.dotDamage[playerId] ?? 0}
+                      who={displayPlayerName}
+                    />
+                    {opponentId && (
+                      <DotLine
+                        amount={lastTurnResult!.dotDamage[opponentId] ?? 0}
+                        who={displayOpponentName}
+                      />
+                    )}
+                    <button
+                      disabled={!nextTurnReady}
+                      onClick={onNextTurn}
+                      className="pop-bounce mt-3 rounded-full bg-gradient-to-r from-fuchsia-400 to-violet-400 text-white px-6 py-2 sm:py-2.5 text-sm sm:text-base font-bold shadow-[0_5px_0_rgba(150,120,200,0.35)] disabled:opacity-40 disabled:shadow-none"
+                    >
+                      {nextTurnReady ? "次のターンへ" : "サーバー処理中…"}
+                    </button>
+                  </div>
+                )}
+              </div>
 
-            <PlayerChoicePanel
-              key={turnNumber}
-              name={playerName}
-              opponentName={opponentName}
-              life={yourLife}
-              gauge={yourGauge}
-              delusionSuccessCount={yourDelusionSuccessCount}
-              phase={phase}
-              dealtRealityCards={dealtRealityCards}
-              pendingDamage={pendingDamage}
-              onSubmitAttack={onSubmitAttack}
-              onSubmitDefense={onSubmitDefense}
-              outcome={isResult ? lastTurnResult : null}
-              wasAttackerInOutcome={iWasAttacker ?? false}
-              revealed={revealed}
-            />
+              <PlayerChoicePanel
+                key={turnNumber}
+                name={playerName}
+                opponentName={opponentName}
+                life={yourLife}
+                gauge={yourGauge}
+                delusionSuccessCount={yourDelusionSuccessCount}
+                phase={phase}
+                dealtRealityCards={dealtRealityCards}
+                pendingDamage={pendingDamage}
+                onSubmitAttack={onSubmitAttack}
+                onSubmitDefense={onSubmitDefense}
+                outcome={isResult ? lastTurnResult : null}
+                wasAttackerInOutcome={iWasAttacker ?? false}
+                revealed={revealed}
+              />
             </div>
           </>
         )}
