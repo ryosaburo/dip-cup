@@ -11,6 +11,7 @@ import {
   type TurnResult,
 } from "@battle/shared";
 import type { GamePhase } from "@/context/GameSocketProvider";
+import { playRevealSound } from "@/lib/sound";
 import { CrackOverlay } from "./CrackOverlay";
 import { OpponentPanel } from "./OpponentPanel";
 import { PlayerChoicePanel } from "./PlayerChoicePanel";
@@ -209,7 +210,11 @@ export function GameField({
         ターン {turnNumber}
       </div>
 
-      <RevealSequencer active={isResult} roundKey={lastTurnResult?.turnNumber ?? turnNumber}>
+      <RevealSequencer
+        active={isResult}
+        roundKey={lastTurnResult?.turnNumber ?? turnNumber}
+        cardType={lastTurnResult?.attack.cardType ?? null}
+      >
         {(revealed) => (
           <>
             <CardTypeRevealImage
@@ -284,14 +289,16 @@ export function GameField({
 function RevealSequencer({
   active,
   roundKey,
+  cardType,
   children,
 }: {
   active: boolean;
   roundKey: number;
+  cardType: CardType | null;
   children: (revealed: boolean) => React.ReactNode;
 }) {
   return (
-    <RevealSequencerInner key={`${roundKey}-${active}`} active={active}>
+    <RevealSequencerInner key={`${roundKey}-${active}`} active={active} cardType={cardType}>
       {children}
     </RevealSequencerInner>
   );
@@ -299,18 +306,23 @@ function RevealSequencer({
 
 function RevealSequencerInner({
   active,
+  cardType,
   children,
 }: {
   active: boolean;
+  cardType: CardType | null;
   children: (revealed: boolean) => React.ReactNode;
 }) {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
     if (!active) return;
-    const t = setTimeout(() => setRevealed(true), 200);
+    const t = setTimeout(() => {
+      setRevealed(true);
+      if (cardType) playRevealSound(cardType);
+    }, 200);
     return () => clearTimeout(t);
-  }, [active]);
+  }, [active, cardType]);
 
   return <>{children(revealed)}</>;
 }
