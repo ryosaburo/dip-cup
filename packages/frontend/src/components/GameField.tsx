@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   REALITY_CARD_CONFIG,
-  STARTING_LIFE,
   type AttackSelection,
   type CardType,
   type DefenseSelection,
