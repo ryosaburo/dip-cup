@@ -27,7 +27,7 @@ export default function TopPage() {
     <main className="flex-1 flex items-center justify-center p-6">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">AIエージェント学習対戦</h1>
+          <h1 className="text-2xl font-bold">妄想ジャッジメント</h1>
           <p className="text-sm text-neutral-500">
             「現実」か「妄想」、相手の手を見破れ。見破られると効果は自分に跳ね返る。
           </p>
