@@ -38,9 +38,7 @@ function StatusHeader({
   return (
     <>
       <div className="flex items-center justify-between mb-1">
-        <span className="font-bold text-sm sm:text-base">
-          {name ?? "あなた"} <span className="text-[var(--pop-ink-soft)] font-normal">(あなた)</span>
-        </span>
+        <span className="font-bold text-sm sm:text-base">{name ?? "あなた"}</span>
         <span className="text-[var(--pop-ink-soft)] text-xs sm:text-sm font-bold">ライフ {life}</span>
       </div>
       <LifeBar life={life} className="mb-1.5" />
@@ -171,10 +169,7 @@ export function PlayerChoicePanel({
         <StatusHeader name={name} life={life} gauge={gauge} delusionSuccessCount={delusionSuccessCount} />
 
         <div className="space-y-2">
-          <p className="text-[var(--pop-ink-soft)] text-xs sm:text-sm">
-            あなたの攻撃ターンです。ランダムに配られた現実カードから1枚、または妄想カードを選んでください（見破られると効果は自分に跳ね返ります）
-          </p>
-          <p className="text-[var(--pop-ink-soft)] text-xs sm:text-sm">現実カード（今ターンだけ選べる3種）</p>
+          <p className="text-[var(--pop-ink)] font-bold text-base sm:text-lg">現実カード</p>
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {dealtRealityCards.map((id, i) => {
               const config = REALITY_CARD_CONFIG[id];
@@ -202,18 +197,18 @@ export function PlayerChoicePanel({
                     } as React.CSSProperties
                   }
                 >
-                  <div className="aspect-[5/7] w-full max-w-[110px] sm:max-w-[130px] md:max-w-[150px] mx-auto rounded-2xl border-[3px] border-white shadow-[0_5px_0_rgba(150,120,200,0.35)] bg-gradient-to-br from-sky-300 via-sky-400 to-blue-400 text-white flex flex-col items-center justify-center gap-1 text-center px-1.5">
-                    <span className="font-bold text-xs sm:text-sm md:text-base leading-tight drop-shadow">
+                  <div className="aspect-[5/7] w-full max-w-[90px] sm:max-w-[105px] md:max-w-[120px] mx-auto rounded-2xl border-[3px] border-white shadow-[0_5px_0_rgba(150,120,200,0.35)] bg-gradient-to-br from-sky-300 via-sky-400 to-blue-400 text-white flex flex-col items-center justify-center gap-1 text-center px-1.5">
+                    <span className="font-bold text-xs sm:text-sm leading-tight drop-shadow">
                       {config.label}
                     </span>
-                    <span className="text-xs sm:text-sm opacity-95">{previewDamage}</span>
+                    <span className="text-xs opacity-95">{previewDamage}</span>
                   </div>
                 </button>
               );
             })}
 
             <div className="col-start-2 flex flex-col items-center gap-1.5 pt-2">
-              <p className="text-[var(--pop-ink-soft)] text-xs sm:text-sm">妄想カード</p>
+              <p className="text-[var(--pop-ink)] font-bold text-base sm:text-lg">妄想カード</p>
               <button
                 type="button"
                 onClick={() => setChoice({ cardType: "delusion" })}
@@ -222,10 +217,10 @@ export function PlayerChoicePanel({
                 }`}
                 style={{ animationDelay: "420ms" } as React.CSSProperties}
               >
-                <div className="aspect-[5/7] w-full max-w-[110px] sm:max-w-[130px] md:max-w-[150px] mx-auto rounded-2xl border-[3px] border-white shadow-[0_5px_0_rgba(150,120,200,0.35)] bg-gradient-to-br from-fuchsia-300 via-pink-400 to-purple-400 text-white flex flex-col items-center justify-center gap-1">
-                  <span className="text-xl sm:text-2xl drop-shadow">{delusionEffect === "heal" ? "💚" : "🌀"}</span>
-                  <span className="font-bold text-sm sm:text-base drop-shadow">妄想</span>
-                  <span className="text-xs sm:text-sm opacity-95">自由{delusionDamage}</span>
+                <div className="aspect-[5/7] w-full max-w-[90px] sm:max-w-[105px] md:max-w-[120px] mx-auto rounded-2xl border-[3px] border-white shadow-[0_5px_0_rgba(150,120,200,0.35)] bg-gradient-to-br from-fuchsia-300 via-pink-400 to-purple-400 text-white flex flex-col items-center justify-center gap-1">
+                  <span className="text-lg sm:text-xl drop-shadow">{delusionEffect === "heal" ? "💚" : "🌀"}</span>
+                  <span className="font-bold text-xs sm:text-sm drop-shadow">妄想</span>
+                  <span className="text-xs opacity-95">自由{delusionDamage}</span>
                 </div>
               </button>
             </div>
