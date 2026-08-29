@@ -15,58 +15,6 @@ interface Shard {
   color: string;
 }
 
-// とある風「パリーンッ！」破砕音（Web Audio API）
-function playIndexShatterSE() {
-  try {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AudioContextClass();
-
-    // 1. ガラス衝突ホワイトノイズ
-    const bufferSize = ctx.sampleRate * 0.35;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
-
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = "highpass";
-    filter.frequency.setValueAtTime(4500, ctx.currentTime);
-    filter.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.3);
-
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.9, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    noise.start();
-
-    // 2. 金属的なキーンという余韻
-    const osc = ctx.createOscillator();
-    const oscGain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(3200, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.45);
-
-    oscGain.gain.setValueAtTime(0.35, ctx.currentTime);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
-
-    osc.connect(oscGain);
-    oscGain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.45);
-  } catch {
-    // skip
-  }
-}
-
 const emptySubscribe = () => () => {};
 
 export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }) {
@@ -80,7 +28,7 @@ export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }
   useEffect(() => {
     if (!active || !mounted) return;
 
-    playIndexShatterSE();
+    // 音声再生（playIndexShatterSE）は無効化済み
 
     const canvas = canvasRef.current;
     if (!canvas) return;
