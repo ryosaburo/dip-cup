@@ -17,7 +17,7 @@ interface Shard {
 
 const emptySubscribe = () => () => {};
 
-export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }) {
+export function CrackOverlay({ active }: { active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mounted = useSyncExternalStore(
     emptySubscribe,
@@ -25,10 +25,9 @@ export function CrackOverlay({ active }: { active: boolean; lifeRatio?: number }
     () => false
   );
 
+  // ライフ0（敗北）時のパリーン粉砕アニメーション（無音）
   useEffect(() => {
     if (!active || !mounted) return;
-
-    // 音声再生（playIndexShatterSE）は無効化済み
 
     const canvas = canvasRef.current;
     if (!canvas) return;
