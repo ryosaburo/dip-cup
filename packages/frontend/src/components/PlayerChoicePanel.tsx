@@ -372,7 +372,7 @@ export function PlayerChoicePanel({
 
         <div className="rounded-2xl bg-violet-50 border-2 border-violet-100 px-3 py-3 sm:py-4 text-center">
           <p className="text-[var(--pop-ink-soft)] text-xs sm:text-sm mb-1">{displayOpponentName}が攻撃してきました</p>
-          <p className="pop-title text-[var(--pop-ink)] text-3xl sm:text-4xl">{pendingDamage}ダメージ？</p>
+          <p className="pop-title text-[var(--pop-ink)] text-3xl sm:text-4xl">{pendingDamage}ダメージ OR 回復</p>
         </div>
         <p className="text-[var(--pop-ink-soft)] text-xs sm:text-sm text-center">
           これは「現実」「妄想」どちらのカードだと思いますか？
