@@ -13,6 +13,10 @@ export interface ClientToServerEvents {
   /** 自分の防御ターンに予想を出す */
   submit_defense: (payload: DefenseSelection) => void;
   leave_room: () => void;
+  /** 自動マッチングの待機列に並ぶ。相手が既に並んでいれば即座にマッチしてルームが作られる */
+  find_match: (payload: { playerName: string; accessToken?: string }) => void;
+  /** 自動マッチングの待機を取りやめる */
+  cancel_match: () => void;
 }
 
 /** Server -> Client */
@@ -51,4 +55,6 @@ export interface ServerToClientEvents {
     delusionSuccessCounts: Record<string, number>;
   }) => void;
   opponent_left: () => void;
+  /** 自動マッチングの待機列に並んだ（まだ相手が見つかっていない） */
+  matchmaking_waiting: () => void;
 }

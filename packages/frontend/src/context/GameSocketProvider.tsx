@@ -20,6 +20,7 @@ import { getSocket } from "@/lib/socket";
 
 export type GamePhase =
   | "idle"
+  | "matchmaking"
   | "waiting_for_opponent"
   | "my_attack"
   | "waiting_attack"
@@ -80,6 +81,8 @@ interface GameSocketContextValue {
   state: GameState;
   createRoom: (playerName: string, accessToken?: string) => void;
   joinRoom: (roomCode: string, playerName: string, accessToken?: string) => void;
+  findMatch: (playerName: string, accessToken?: string) => void;
+  cancelMatchmaking: () => void;
   submitAttack: (attack: AttackSelection) => void;
   submitDefense: (defense: DefenseSelection) => void;
   proceedToNextTurn: () => void;
@@ -178,6 +181,10 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, phase: "opponent_left" }));
     });
 
+    socket.on("matchmaking_waiting", () => {
+      setState((s) => ({ ...s, phase: "matchmaking" }));
+    });
+
     socket.on("error", ({ message }) => {
       setState((s) => ({ ...s, errorMessage: message }));
     });
@@ -204,6 +211,16 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+
+  const findMatch = useCallback((playerName: string, accessToken?: string) => {
+    setState((s) => ({ ...s, playerName, phase: "matchmaking" }));
+    socketRef.current.emit("find_match", { playerName, accessToken });
+  }, []);
+
+  const cancelMatchmaking = useCallback(() => {
+    socketRef.current.emit("cancel_match");
+    setState((s) => ({ ...s, phase: "idle" }));
+  }, []);
 
   const submitAttack = useCallback((attack: AttackSelection) => {
     socketRef.current.emit("submit_attack", attack);
@@ -247,6 +264,8 @@ export function GameSocketProvider({ children }: { children: ReactNode }) {
         state,
         createRoom,
         joinRoom,
+        findMatch,
+        cancelMatchmaking,
         submitAttack,
         submitDefense,
         proceedToNextTurn,
