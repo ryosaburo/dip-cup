@@ -10,7 +10,7 @@ import type { RealityCardId } from "./types.js";
 export const STARTING_LIFE = 100;
 
 /** 妄想カードで申告できる量（ダメージ量または回復量）の範囲（見破られなければこの値がそのまま通る） */
-export const DELUSION_DAMAGE_MIN = 10;
+export const DELUSION_DAMAGE_MIN = 1;
 export const DELUSION_DAMAGE_MAX = 60;
 
 /** 妄想カードを見破られずに成功させた累計回数がこの値に達すると、即座に勝利となる */
