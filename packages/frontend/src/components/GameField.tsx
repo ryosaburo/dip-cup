@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   REALITY_CARD_CONFIG,
+  STARTING_LIFE,
   type AttackSelection,
   type CardType,
   type DefenseSelection,
@@ -13,6 +14,7 @@ import {
 import type { GamePhase } from "@/context/GameSocketProvider";
 import { playRevealSound } from "@/lib/sound";
 import { CrackOverlay } from "./CrackOverlay";
+import { LifeCrackBackground } from "./LifeCrackBackground";
 import { OpponentPanel } from "./OpponentPanel";
 import { PlayerChoicePanel } from "./PlayerChoicePanel";
 
@@ -214,6 +216,9 @@ export function GameField({
         yourLife <= 0 ? "shatter-impact" : ""
       }`}
     >
+      {/* 手前＝妄想寄りの背景。ライフが減るほどヒビが入り、奥の「現実」背景が透ける */}
+      <LifeCrackBackground lifeRatio={yourLife / STARTING_LIFE} />
+
       {/* 敗北時にとある風ガラス粉砕エフェクトを発火 */}
       <CrackOverlay active={isDefeat} />
 

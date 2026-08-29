@@ -378,19 +378,25 @@ body {
   animation: reveal-backdrop-in 0.35s ease-out both;
 }
 
-/* --- ふわふわポップなステージ背景 --- */
+/* --- ふわふわポップなステージ背景（手前＝妄想寄り／奥＝真逆の現実） --- */
 
 .pop-stage {
   position: relative;
   overflow: hidden;
+}
+
+/* 手前：ふわふわ妄想寄りのパステル背景。ライフが減るとヒビ状にマスクされ、奥の現実が透ける */
+.pop-stage-front-bg {
+  position: absolute;
+  inset: 0;
   background:
     radial-gradient(circle at 12% 15%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 40%),
     radial-gradient(circle at 88% 82%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 45%),
     linear-gradient(150deg, #ffd9ec 0%, #dcd6ff 50%, #d3f8e2 100%);
 }
 
-.pop-stage::before,
-.pop-stage::after {
+.pop-stage-front-bg::before,
+.pop-stage-front-bg::after {
   content: "";
   position: absolute;
   border-radius: 9999px;
@@ -399,7 +405,7 @@ body {
   pointer-events: none;
 }
 
-.pop-stage::before {
+.pop-stage-front-bg::before {
   width: 140px;
   height: 90px;
   top: -30px;
@@ -407,7 +413,7 @@ body {
   animation: pop-cloud-drift 9s ease-in-out infinite;
 }
 
-.pop-stage::after {
+.pop-stage-front-bg::after {
   width: 180px;
   height: 110px;
   bottom: -40px;
@@ -422,6 +428,38 @@ body {
   }
   50% {
     transform: translate(14px, 10px) scale(1.06);
+  }
+}
+
+/* 奥：手前とは真逆の、冷たく沈んだ「現実」の背景。ヒビの隙間から少しずつ見えてくる */
+.pop-stage-reality-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(130, 130, 145, 0.4) 0%, rgba(130, 130, 145, 0) 45%),
+    radial-gradient(circle at 85% 82%, rgba(70, 70, 84, 0.4) 0%, rgba(70, 70, 84, 0) 50%),
+    linear-gradient(150deg, #34343e 0%, #201f26 55%, #121014 100%);
+}
+
+.pop-stage-reality-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 46px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 46px);
+  mix-blend-mode: overlay;
+  opacity: 0.7;
+  animation: reality-bg-pulse 6s ease-in-out infinite;
+}
+
+@keyframes reality-bg-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
   }
 }
 
