@@ -17,14 +17,7 @@ interface Shard {
 
 const emptySubscribe = () => () => {};
 
-export function CrackOverlay({
-  active,
-  lifeRatio = 1,
-}: {
-  active: boolean;
-  /** 1.0 (満タン: 100) 〜 0.0 (瀕死/敗北: 0) */
-  lifeRatio?: number;
-}) {
+export function CrackOverlay({ active }: { active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mounted = useSyncExternalStore(
     emptySubscribe,
@@ -32,82 +25,7 @@ export function CrackOverlay({
     () => false
   );
 
-  // 1. ライフ 100 -> 0 にかけて滑らかにヒビが侵食していく描画
-  useEffect(() => {
-    if (active || !mounted) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const width = (canvas.width = window.innerWidth);
-    const height = (canvas.height = window.innerHeight);
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    ctx.clearRect(0, 0, width, height);
-
-    // ダメージ量: 0.0 (満タン) 〜 1.0 (ライフ0直前)
-    const damage = Math.max(0, Math.min(1, 1 - lifeRatio));
-    if (damage <= 0.02) return; // ほぼ満タンの時はヒビなし
-
-    const maxRadius = Math.max(width, height) * 0.75 * damage;
-    const mainBranches = 8;
-
-    ctx.save();
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.35 + damage * 0.55})`;
-    ctx.lineWidth = 1.0 + damage * 1.8;
-    ctx.shadowColor = "rgba(180, 220, 255, 0.75)";
-    ctx.shadowBlur = 3 + damage * 7;
-
-    for (let b = 0; b < mainBranches; b++) {
-      let curX = centerX;
-      let curY = centerY;
-      const baseAngle = (b / mainBranches) * Math.PI * 2 + Math.sin(b * 3) * 0.2;
-
-      ctx.beginPath();
-      ctx.moveTo(curX, curY);
-
-      // ダメージが多いほど節点（ギザギザ）が増えて遠くまで伸びる
-      const segments = Math.floor(4 + damage * 14);
-      for (let i = 1; i <= segments; i++) {
-        const segProgress = i / segments;
-        const currentR = maxRadius * segProgress;
-        const jitterAngle = baseAngle + Math.sin(b * 12 + i * 2.8) * 0.38;
-
-        curX = centerX + Math.cos(jitterAngle) * currentR;
-        curY = centerY + Math.sin(jitterAngle) * currentR;
-        ctx.lineTo(curX, curY);
-
-        // ダメージが中盤（40%以上）から枝分かれの小ヒビが発生
-        if (damage > 0.4 && i % 2 === 0) {
-          const subAngle = jitterAngle + (b % 2 === 0 ? 0.65 : -0.65);
-          const subLen = (30 + i * 4) * (damage - 0.3);
-          ctx.moveTo(curX, curY);
-          ctx.lineTo(
-            curX + Math.cos(subAngle) * subLen,
-            curY + Math.sin(subAngle) * subLen
-          );
-          ctx.moveTo(curX, curY);
-        }
-
-        // ダメージが終盤（70%以上）になると蜘蛛の巣状の横糸（リング状亀裂）が繋がる
-        if (damage > 0.7 && i % 3 === 0) {
-          const nextAngle = baseAngle + (Math.PI * 2) / mainBranches;
-          const nextX = centerX + Math.cos(nextAngle) * currentR * 0.9;
-          const nextY = centerY + Math.sin(nextAngle) * currentR * 0.9;
-          ctx.moveTo(curX, curY);
-          ctx.lineTo(nextX, nextY);
-          ctx.moveTo(curX, curY);
-        }
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
-  }, [active, lifeRatio, mounted]);
-
-  // 2. ライフ0（敗北）時のパリーン粉砕アニメーション（無音）
+  // ライフ0（敗北）時のパリーン粉砕アニメーション（無音）
   useEffect(() => {
     if (!active || !mounted) return;
 
@@ -248,7 +166,7 @@ export function CrackOverlay({
     };
   }, [active, mounted]);
 
-  if (!mounted || typeof document === "undefined") return null;
+  if (!active || !mounted || typeof document === "undefined") return null;
 
   return createPortal(
     <canvas

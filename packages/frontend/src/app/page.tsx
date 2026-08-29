@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthPanel } from "@/components/AuthPanel";
+import { RealityCardGuide } from "@/components/RealityCardGuide";
 import { useAuth } from "@/context/AuthProvider";
 import { useGameSocket } from "@/context/GameSocketProvider";
 
@@ -83,6 +84,8 @@ export default function TopPage() {
             入室する
           </button>
         </section>
+
+        <RealityCardGuide />
       </div>
     </main>
   );
